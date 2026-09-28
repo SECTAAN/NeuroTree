@@ -1,0 +1,49 @@
+from typing import List, TYPE_CHECKING, Any
+from sqlalchemy import String, Text, Float, ForeignKey, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.database import Base
+
+if TYPE_CHECKING:
+    from app.models.session import Session
+    from app.models.edge import Edge
+
+
+class Node(Base):
+    """
+    Represents a single knowledge chunk (light bulb) in the circuit.
+    mastery_score: 0.0 – 100.0 (battery level)
+    status: 'locked' | 'unlocked'
+    """
+    __tablename__ = "nodes"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("sessions.uuid", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Stored as JSON array e.g. ["IP Address", "Subnet Mask"]
+    key_concepts: Mapped[Any] = mapped_column(JSON, nullable=True, default=list)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="locked")
+    mastery_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    # Relationships
+    session: Mapped["Session"] = relationship(
+        "Session", back_populates="nodes"
+    )
+    outgoing_edges: Mapped[List["Edge"]] = relationship(
+        "Edge",
+        foreign_keys="[Edge.source_id]",
+        back_populates="source_node",
+        cascade="all, delete-orphan",
+    )
+    incoming_edges: Mapped[List["Edge"]] = relationship(
+        "Edge",
+        foreign_keys="[Edge.target_id]",
+        back_populates="target_node",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return f"<Node id={self.id} title={self.title!r} mastery={self.mastery_score}>"
