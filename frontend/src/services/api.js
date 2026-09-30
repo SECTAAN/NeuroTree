@@ -36,9 +36,25 @@ api.interceptors.request.use((config) => {
 
 // Global response error handler — logs full detail server-side, surfaces safe
 // message to callers.
+// HTTP 429 is tagged with `isRateLimit = true` so UI components can render
+// a specific cooldown message instead of the generic circuit-error state.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status
+
+    if (status === 429) {
+      const retryAfter = error.response?.headers?.['retry-after']
+      const err = new Error(
+        'Sirkuit AI sedang cooldown (Terlalu banyak permintaan). ' +
+        'Harap tunggu beberapa saat sebelum mencoba lagi.'
+      )
+      err.isRateLimit  = true
+      err.retryAfter   = retryAfter ? parseInt(retryAfter, 10) : 30  // seconds
+      console.warn('[NeuroTree] Rate limit hit — retry after', err.retryAfter, 's')
+      return Promise.reject(err)
+    }
+
     const msg =
       error.response?.data?.detail ||
       error.message ||

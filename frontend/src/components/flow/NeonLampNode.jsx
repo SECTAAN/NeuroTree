@@ -10,17 +10,27 @@ import GlowingNodeCard from './GlowingNodeCard'
 export default function NeonLampNode({ data, selected }) {
   const [cardOpen, setCardOpen] = useState(false)
 
-  const mastery   = (data.mastery_score ?? 0) / 100   // 0–1
-  const isLocked  = data.status === 'locked'
+  const rawMastery = (data.mastery_score ?? 0) / 100   // 0–1 from DB score
+  const isLocked   = data.status === 'locked'
 
-  // State label for title tooltip
+  // Bug fix: an unlocked node with mastery 0 is "Available" — it must still glow.
+  // We give it a visual floor of 0.18 so the lamp is visibly lit.
+  const mastery = isLocked ? 0 : Math.max(rawMastery, 0.18)
+
   const stateLabel =
-    isLocked        ? 'Locked'    :
-    mastery >= 1    ? 'Mastered'  :
-    mastery >= 0.65 ? 'Bright'    :
-    mastery >= 0.4  ? 'In Progress' :
-    mastery > 0     ? 'Low'       :
-                      'Available'
+    isLocked           ? 'Locked'      :
+    rawMastery >= 1    ? 'Mastered'    :
+    rawMastery >= 0.65 ? 'Bright'      :
+    rawMastery >= 0.4  ? 'In Progress' :
+    rawMastery > 0     ? 'Low'         :
+                         'Available'
+
+  const stateClass =
+    isLocked           ? 'lamp-locked'   :
+    rawMastery >= 1    ? 'lamp-mastered' :
+    rawMastery >= 0.65 ? 'lamp-bright'   :
+    rawMastery >= 0.4  ? 'lamp-medium'   :
+                         'lamp-low'      // covers both mastery > 0 and Available (floor)
 
   const handleStyle = {
     width: 6, height: 6,
@@ -41,12 +51,12 @@ export default function NeonLampNode({ data, selected }) {
 
       {/* ── Lamp node body — 20px circuit dot (Rule 1) ─────────────────── */}
       <div
-        className={['lamp-node', isLocked ? 'lamp-locked' : mastery >= 1 ? 'lamp-mastered' : mastery >= 0.65 ? 'lamp-bright' : mastery >= 0.4 ? 'lamp-medium' : 'lamp-low'].join(' ')}
+        className={['lamp-node', stateClass].join(' ')}
         style={{ '--mastery': mastery, width: 20, height: 20 }}
         onClick={() => !isLocked && setCardOpen((v) => !v)}
         title={`${data.label} · ${stateLabel}`}
       >
-        {/* Outer halo */}
+        {/* Outer halo — always rendered for unlocked nodes */}
         {!isLocked && <div className="lamp-halo" style={{ '--mastery': mastery }} />}
 
         {/* Core circle */}
@@ -70,7 +80,7 @@ export default function NeonLampNode({ data, selected }) {
         className="absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap pointer-events-none"
         style={{
           fontSize: 10,
-          color: isLocked ? 'rgba(255,255,255,0.25)' : 'rgba(240,242,245,0.7)',
+          color: isLocked ? 'var(--text-node-locked)' : 'var(--text-node-label)',
           fontFamily: '"Inter", sans-serif',
           letterSpacing: '0.02em',
           maxWidth: 90,

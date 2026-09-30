@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { graphApi } from '../services/api'
-import SkillTreeCanvas from '../components/flow/SkillTreeCanvas'
-import QuizModal       from '../components/quiz/QuizModal'
-import GlassPanel      from '../components/ui/GlassPanel'
+import SkillTreeCanvas     from '../components/flow/SkillTreeCanvas'
+import QuizModal           from '../components/quiz/QuizModal'
+import CollapsibleHeader   from '../components/layout/CollapsibleHeader'
+import HamburgerSidebar    from '../components/layout/HamburgerSidebar'
 
 export default function SkillTree() {
   const { navigateTo, graphData, setGraphData, quizOpen, closeQuiz, quizNode, updateNodeMastery } = useApp()
-  const [loading, setLoading]   = useState(!graphData?.nodes?.length)
-  const [error, setError]       = useState(null)
+  const [loading, setLoading]           = useState(!graphData?.nodes?.length)
+  const [error, setError]               = useState(null)
   const [headerCollapsed, setHeaderCollapsed] = useState(false)
+  const [sidebarOpen, setSidebarOpen]   = useState(false)
 
-  // Fetch graph if empty (direct navigation)
+  // Fetch graph if empty (direct navigation or page refresh)
   useEffect(() => {
     if (graphData?.nodes?.length) { setLoading(false); return }
     let cancelled = false
@@ -22,59 +24,30 @@ export default function SkillTree() {
     return () => { cancelled = true }
   }, [])
 
-  const totalNodes   = graphData?.nodes?.length ?? 0
-  const unlockedNodes= graphData?.nodes?.filter((n) => n.status !== 'locked').length ?? 0
-  const avgMastery   = totalNodes
+  const totalNodes    = graphData?.nodes?.length ?? 0
+  const unlockedNodes = graphData?.nodes?.filter((n) => n.status !== 'locked').length ?? 0
+  const avgMastery    = totalNodes
     ? Math.round(graphData.nodes.reduce((s, n) => s + (n.mastery_score ?? 0), 0) / totalNodes)
     : 0
+
+  // Try to read the tree name from any node's session (not stored on graph directly),
+  // so we just show a generic label for now.
+  const treeName = null
 
   return (
     <div className="w-full h-full bg-app flex flex-col">
 
       {/* ── Top HUD bar ─────────────────────────────────────────────────── */}
-      <header
-        className="glass-2 mx-3 mt-3 mb-2 rounded-2xl flex-shrink-0 transition-all duration-300 overflow-hidden"
-        style={{ height: headerCollapsed ? 44 : 56 }}
-      >
-        <div className="flex items-center justify-between px-4 h-full gap-4">
-          {/* Back */}
-          <button
-            onClick={() => navigateTo('dashboard')}
-            className="text-xs text-white/40 hover:text-white/70 transition-colors flex items-center gap-1"
-          >
-            ← Dashboard
-          </button>
-
-          {!headerCollapsed && (
-            <div className="flex items-center gap-4 text-xs text-white/40">
-              <span>
-                <span style={{ color: 'rgba(0,243,255,0.7)' }}>{unlockedNodes}</span>
-                /{totalNodes} unlocked
-              </span>
-              {/* Overall mastery bar */}
-              <div className="flex items-center gap-2">
-                <div className="w-24 h-1 rounded-full bg-white/8 overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${avgMastery}%`,
-                      background: 'linear-gradient(90deg, rgba(0,243,255,0.7), rgba(77,124,254,0.5))',
-                    }}
-                  />
-                </div>
-                <span>{avgMastery}%</span>
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={() => setHeaderCollapsed((v) => !v)}
-            className="w-6 h-6 rounded-md glass-1 flex items-center justify-center text-white/30 hover:text-white/60 text-xs transition-colors"
-          >
-            {headerCollapsed ? '↓' : '↑'}
-          </button>
-        </div>
-      </header>
+      <CollapsibleHeader
+        collapsed={headerCollapsed}
+        onToggleCollapse={() => setHeaderCollapsed((v) => !v)}
+        onMenuOpen={() => setSidebarOpen(true)}
+        onBack={() => navigateTo('dashboard')}
+        totalNodes={totalNodes}
+        unlockedNodes={unlockedNodes}
+        avgMastery={avgMastery}
+        treeName={treeName}
+      />
 
       {/* ── Canvas ──────────────────────────────────────────────────────── */}
       <div className="flex-1 relative overflow-hidden rounded-2xl mx-3 mb-3">
@@ -110,6 +83,12 @@ export default function SkillTree() {
 
         <SkillTreeCanvas graphData={graphData} />
       </div>
+
+      {/* ── Hamburger sidebar ───────────────────────────────────────────── */}
+      <HamburgerSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       {/* ── Quiz Modal ───────────────────────────────────────────────────── */}
       {quizOpen && quizNode && (

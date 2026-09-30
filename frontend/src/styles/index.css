@@ -5,6 +5,7 @@
 @tailwind utilities;
 
 /* ── CSS Variables — Theme System (10.4) ──────────────────────────────────── */
+/* Dark mode defaults (default — no class needed).                             */
 :root {
   --bg-primary:    #111315;
   --bg-secondary:  #151719;
@@ -17,6 +18,12 @@
   --text-muted:    rgba(240,242,245,0.5);
   --border-subtle: rgba(255,255,255,0.07);
   --border-glass:  rgba(255,255,255,0.12);
+
+  /* Node label — dark mode */
+  --text-node-label:  rgba(240,242,245,0.70);
+  --text-node-locked: rgba(255,255,255,0.25);
+  /* Toolbar icon hover — dark mode */
+  --toolbar-icon-hover: rgba(240,242,245,0.85);
 }
 
 /* ── Global Reset ──────────────────────────────────────────────────────────── */
@@ -243,4 +250,124 @@ html, body, #root {
   background: rgba(17,19,21,0.85) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
   border-radius: 8px !important;
+}
+
+/* ── Light Mode Overrides (P3 — spec 10.61) ───────────────────────────────── */
+/* html.theme-light is added/removed by useCanvasTools (applyThemeClass).     */
+/* Tailwind dark: variants are driven by html.dark (also toggled there).      */
+/* Only surface/color values change — layout, interactions, and learning data */
+/* are fully preserved (spec 10.61 requirement).                              */
+
+html.theme-light {
+  --bg-primary:    #F0F2F5;
+  --bg-secondary:  #E8EAED;
+  --bg-elevated:   #FFFFFF;
+  --text-primary:  #1A1D21;
+  --text-muted:    rgba(26,29,33,0.55);
+  --border-subtle: rgba(0,0,0,0.07);
+  --border-glass:  rgba(0,0,0,0.10);
+
+  /* Node label — light mode */
+  --text-node-label:  rgba(30,35,42,0.75);
+  --text-node-locked: rgba(0,0,0,0.25);
+  /* Toolbar icon hover — light mode */
+  --toolbar-icon-hover: rgba(30,35,42,0.90);
+}
+
+html.theme-light,
+html.theme-light body,
+html.theme-light #root {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Background — warm light gray with soft ambient radials */
+html.theme-light .bg-app {
+  background-color: #F0F2F5;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(77,124,254,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 0% 0%,   rgba(0,200,255,0.03)  0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 100% 20%, rgba(150,0,200,0.03)  0%, transparent 60%);
+}
+
+/* Glass Level 1 */
+html.theme-light .glass-1 {
+  background: rgba(255,255,255,0.55);
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Glass Level 2 */
+html.theme-light .glass-2 {
+  background: rgba(255,255,255,0.75);
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.90);
+}
+
+/* Glass Level 3 (modals, quiz) */
+html.theme-light .glass-3 {
+  background: rgba(248,249,252,0.97);
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,1);
+}
+
+/* Liquid button */
+html.theme-light .btn-liquid {
+  background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(220,240,255,0.7) 50%, rgba(230,200,255,0.5) 100%);
+  border-color: rgba(0,0,0,0.12);
+  color: rgba(26,29,33,0.85);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.06);
+}
+html.theme-light .btn-liquid:hover {
+  border-color: rgba(0,180,220,0.5);
+  box-shadow: 0 0 14px rgba(0,180,220,0.18), 0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1);
+}
+
+/* Scrollbar */
+html.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+html.theme-light ::-webkit-scrollbar-thumb:hover { background: rgba(0,150,200,0.35); }
+
+/* Neon lamp — reduce glow intensity, keep it legible on white */
+html.theme-light .lamp-halo {
+  opacity: calc(var(--mastery) * 0.5);
+}
+html.theme-light .lamp-core {
+  box-shadow:
+    0 0 calc(4px  + var(--mastery)*12px) rgba(0,160,200,calc(0.25 + var(--mastery)*0.35)),
+    0 0 calc(8px  + var(--mastery)*24px) rgba(0,160,200,calc(0.08 + var(--mastery)*0.12));
+  border-color: rgba(0,160,200,calc(0.25 + var(--mastery)*0.5));
+}
+
+/* React Flow handle — light mode */
+html.theme-light .react-flow__handle {
+  border-color: rgba(0,150,200,0.7) !important;
+  background: #F0F2F5 !important;
+}
+html.theme-light .react-flow__handle:hover {
+  background: rgba(0,150,200,0.8) !important;
+}
+
+/* React Flow controls — light mode */
+html.theme-light .react-flow__controls {
+  background: rgba(255,255,255,0.90) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.theme-light .react-flow__controls-button {
+  color: rgba(0,100,160,0.8) !important;
+  fill: rgba(0,100,160,0.8) !important;
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+html.theme-light .react-flow__controls-button:hover {
+  background: rgba(0,140,190,0.08) !important;
+}
+
+/* Card entrance animation (used by NoteModal, RouterModal) */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* glowPulse used by RouterModal loading state + lamp-mastered */
+@keyframes glowPulse {
+  0%, 100% { filter: brightness(0.9); }
+  50%       { filter: brightness(1.4); }
 }

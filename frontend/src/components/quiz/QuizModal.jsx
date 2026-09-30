@@ -1,23 +1,49 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { quizApi } from '../../services/api'
 
 /**
- * QuizModal — glassmorphism Level-3 modal for answering essay questions (10.22).
- * Calls backend evaluate endpoint and bubbles mastery update to AppContext.
+ * QuizModal — glassmorphism Level-3 modal for answering essay questions.
+ *
+ * Steps:
+ *   loading   → fetching question from backend
+ *   question  → user types answer and submits
+ *   result    → AI score + mastery bar
+ *   error     → generic circuit error
+ *   cooldown  → HTTP 429 rate-limit: specific message + timed re-enable button
  */
 export default function QuizModal({ node, onClose, onMasteryUpdate }) {
-  const [step, setStep]       = useState('loading') // loading | question | result | error
-  const [question, setQuestion] = useState('')
-  const [answer, setAnswer]   = useState('')
-  const [result, setResult]   = useState(null)
+  // step: 'loading' | 'question' | 'result' | 'error' | 'cooldown'
+  const [step, setStep]           = useState('loading')
+  const [question, setQuestion]   = useState('')
+  const [answer, setAnswer]       = useState('')
+  const [result, setResult]       = useState(null)
   const [submitting, setSubmitting] = useState(false)
-  const [errMsg, setErrMsg]   = useState('')
+  const [errMsg, setErrMsg]       = useState('')
 
-  // Load question on mount.
-  // `node` is the React Flow `data` object: { id, label, status, mastery_score }
-  // `node.id` is the real DB node ID injected in SkillTreeCanvas data.id
+  // Cooldown timer (seconds remaining until retry button re-enables)
+  const [cooldown, setCooldown]   = useState(0)
+  const timerRef                  = useRef(null)
+
+  // ── Start / clear countdown ───────────────────────────────────────────────
+  function startCooldown(seconds) {
+    setCooldown(seconds)
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => () => clearInterval(timerRef.current), [])
+
+  // ── Load question on mount ────────────────────────────────────────────────
   useEffect(() => {
-    const nodeId = node?.id   // e.g. "aaaabbbb_node_01"
+    const nodeId = node?.id
     console.log('[QuizModal] Payload quiz node_id:', nodeId, '| full node data:', node)
     if (!nodeId) {
       setErrMsg(`node_id is undefined. Received node: ${JSON.stringify(node)}`)
@@ -26,9 +52,18 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
     }
     quizApi.generate(nodeId)
       .then(({ data }) => { setQuestion(data.question); setStep('question') })
-      .catch((e) => { setErrMsg(e.message); setStep('error') })
+      .catch((e) => {
+        if (e.isRateLimit) {
+          startCooldown(e.retryAfter ?? 30)
+          setStep('cooldown')
+        } else {
+          setErrMsg(e.message)
+          setStep('error')
+        }
+      })
   }, [node?.id])
 
+  // ── Submit answer ─────────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!answer.trim() || submitting) return
     setSubmitting(true)
@@ -40,11 +75,29 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
       onMasteryUpdate(nodeId, data.new_mastery_score, data.unlocked_new_nodes ?? [])
       setStep('result')
     } catch (e) {
-      setErrMsg(e.message)
-      setStep('error')
+      if (e.isRateLimit) {
+        startCooldown(e.retryAfter ?? 30)
+        setStep('cooldown')
+      } else {
+        setErrMsg(e.message)
+        setStep('error')
+      }
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Retry from cooldown — go back to loading (re-fetch question)
+  function handleRetryAfterCooldown() {
+    if (cooldown > 0) return
+    setStep('loading')
+    const nodeId = node?.id
+    quizApi.generate(nodeId)
+      .then(({ data }) => { setQuestion(data.question); setStep('question') })
+      .catch((e) => {
+        if (e.isRateLimit) { startCooldown(e.retryAfter ?? 30); setStep('cooldown') }
+        else               { setErrMsg(e.message); setStep('error') }
+      })
   }
 
   const masteryColor =
@@ -175,7 +228,71 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
           </>
         )}
 
-        {/* ── Error ───────────────────────────────────────────────────── */}
+        {/* ── Cooldown (HTTP 429) ──────────────────────────────────────── */}
+        {step === 'cooldown' && (
+          <div className="py-8 text-center">
+            {/* Animated cooldown ring */}
+            <div className="relative w-16 h-16 mx-auto mb-5">
+              <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
+                <circle
+                  cx="32" cy="32" r="26"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="4"
+                />
+                <circle
+                  cx="32" cy="32" r="26"
+                  fill="none"
+                  stroke="rgba(0,243,255,0.5)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 26}`}
+                  strokeDashoffset={`${2 * Math.PI * 26 * (cooldown / 30)}`}
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span
+                className="absolute inset-0 flex items-center justify-center text-sm font-mono font-semibold"
+                style={{ color: cooldown > 0 ? 'rgba(0,243,255,0.8)' : 'rgba(0,255,163,0.8)' }}
+              >
+                {cooldown > 0 ? `${cooldown}s` : '✓'}
+              </span>
+            </div>
+
+            <p
+              className="text-sm font-medium mb-2"
+              style={{ color: 'rgba(0,243,255,0.8)' }}
+            >
+              Sirkuit AI sedang cooldown
+            </p>
+            <p className="text-xs text-white/35 mb-6 leading-relaxed max-w-xs mx-auto">
+              Terlalu banyak permintaan. Harap tunggu beberapa saat sebelum mencoba lagi.
+            </p>
+
+            {/* Retry button — disabled while countdown is running */}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={handleRetryAfterCooldown}
+                disabled={cooldown > 0}
+                className="btn-liquid px-6 py-2.5 text-sm font-medium disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-300"
+                style={{
+                  borderColor: cooldown === 0 ? 'rgba(0,243,255,0.5)' : undefined,
+                  boxShadow:   cooldown === 0 ? '0 0 14px rgba(0,243,255,0.2)' : undefined,
+                }}
+              >
+                {cooldown > 0 ? `Tunggu ${cooldown}s…` : 'Coba Lagi ⚡'}
+              </button>
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 text-sm text-white/35 hover:text-white/60 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Generic Error ────────────────────────────────────────────── */}
         {step === 'error' && (
           <div className="py-8 text-center">
             <p className="text-white/50 text-sm mb-2">Sirkuit AI terputus</p>
