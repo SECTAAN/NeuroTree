@@ -9,9 +9,10 @@ import { useState, useCallback, useEffect, useRef } from 'react'
  *   'cut'      → edge.data.status = 'cut'
  *   'router'   → inject router object onto edge.data.router
  *   'note'     → open NoteModal for edge
+ *   'grow'     → expand node: call expandNode API and append children (P4)
  *
  * Keyboard shortcuts (spec 10.84):
- *   H → pan      C → cut     R → router     N → note
+ *   H → pan      C → cut     R → router     N → note     G → grow
  *   Escape       → default (clear active tool)
  *   Ctrl+Z       → undo last cut (restores most recently cut edge)
  *
@@ -105,6 +106,12 @@ export function useCanvasTools() {
           if (!e.ctrlKey && !e.metaKey) {
             e.preventDefault()
             setActiveTool((prev) => prev === 'note' ? 'default' : 'note')
+          }
+          break
+        case 'g':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault()
+            setActiveTool((prev) => prev === 'grow' ? 'default' : 'grow')
           }
           break
         case 'escape':

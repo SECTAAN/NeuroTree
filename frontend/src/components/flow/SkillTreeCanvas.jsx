@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ReactFlow,
   MiniMap,
@@ -15,6 +15,7 @@ import CyberpunkToolbar from './CyberpunkToolbar'
 import RouterModal      from '../router/RouterModal'
 import NoteModal        from '../notes/NoteModal'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
+import { mockProgressiveApi } from '../../services/api'
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
 function computeLayout(apiNodes, apiEdges) {
@@ -68,18 +69,25 @@ function Canvas({ graphData }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
+  // Set of node IDs currently waiting for expandNode response (shows spinner on lamp)
+  const [growingIds, setGrowingIds] = useState(new Set())
+
+  // Ref to raw API-shape graph so we can merge without deriving from RF state
+  const graphRef = useRef({ nodes: [], edges: [] })
+
   // ── Modal state ───────────────────────────────────────────────────────────
   // routerModal: full context object { sourceNodeId, targetNodeId, sourceLabel, targetLabel, ... }
   const [routerModal, setRouterModal] = useState(null)
   const [noteModal,   setNoteModal]   = useState(null)   // { edgeId, note } | null
 
-  // ── Build React Flow nodes/edges from API graph data ─────────────────────
-  useEffect(() => {
-    if (!graphData?.nodes?.length) return
-    const positions = computeLayout(graphData.nodes, graphData.edges)
+  // ── Shared helper: build RF nodes+edges from raw API-shape arrays ─────────
+  const applyGraph = useCallback((apiNodes, apiEdges) => {
+    const positions = computeLayout(apiNodes, apiEdges)
+    const labelMap  = {}
+    apiNodes.forEach((n) => { labelMap[n.id] = n.title })
 
     setNodes(
-      graphData.nodes.map((n) => ({
+      apiNodes.map((n) => ({
         id:       n.id,
         type:     'neonLamp',
         position: positions[n.id] ?? { x: 0, y: 0 },
@@ -94,12 +102,8 @@ function Canvas({ graphData }) {
       }))
     )
 
-    // Build a quick label-lookup map from the same graphData.nodes
-    const labelMap = {}
-    graphData.nodes.forEach((n) => { labelMap[n.id] = n.title })
-
     setEdges(
-      graphData.edges.map((e, idx) => {
+      apiEdges.map((e, idx) => {
         const edgeId = `e-${e.source_id}-${e.target_id}-${idx}`
         return {
           id:     edgeId,
@@ -110,7 +114,6 @@ function Canvas({ graphData }) {
             status:  e.status ?? (e.unlocked === false ? 'locked' : 'active'),
             router:  e.router ?? null,
             note:    e.note   ?? null,
-            // onOpenRouter receives the stored RouterData; we enrich it with labels here
             onOpenRouter: (router) => setRouterModal({
               ...router,
               sourceLabel: labelMap[router.sourceNodeId] ?? router.sourceNodeId,
@@ -126,7 +129,17 @@ function Canvas({ graphData }) {
         }
       })
     )
-  }, [graphData, setNodes, setEdges])
+  }, [setNodes, setEdges])
+
+  // ── Build React Flow nodes/edges from API graph data ─────────────────────
+  useEffect(() => {
+    if (!graphData?.nodes?.length) return
+    graphRef.current = {
+      nodes: graphData.nodes,
+      edges: graphData.edges,
+    }
+    applyGraph(graphData.nodes, graphData.edges)
+  }, [graphData, applyGraph])
 
   // ── Edge click dispatcher (spec 10.87) ────────────────────────────────────
   const onEdgeClick = useCallback((event, edge) => {
@@ -186,7 +199,62 @@ function Canvas({ graphData }) {
     }
 
     // 'default' tool → no special edge action (node card handles selection)
-  }, [activeTool, setEdges])
+  }, [activeTool, nodes, setEdges])
+
+  // ── Node click dispatcher ─────────────────────────────────────────────────
+  const onNodeClick = useCallback(async (event, node) => {
+    if (activeTool !== 'grow') return
+
+    // Prevent expanding a node that is still loading or already has children
+    const alreadyHasChildren = graphRef.current.edges.some(
+      (e) => e.source_id === node.id
+    )
+    if (alreadyHasChildren) return
+    if (growingIds.has(node.id)) return
+
+    // Mark node as loading — NeonLampNode reads data.growing to show spinner
+    setGrowingIds((prev) => new Set([...prev, node.id]))
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === node.id ? { ...n, data: { ...n.data, growing: true } } : n
+      )
+    )
+
+    try {
+      const { data } = await mockProgressiveApi.expandNode(node.id, node.data?.label ?? '')
+
+      // Merge: de-duplicate by id before merging
+      const existingNodeIds = new Set(graphRef.current.nodes.map((n) => n.id))
+      const existingEdgeKeys = new Set(
+        graphRef.current.edges.map((e) => `${e.source_id}→${e.target_id}`)
+      )
+
+      const freshNodes = data.nodes.filter((n) => !existingNodeIds.has(n.id))
+      const freshEdges = data.edges.filter(
+        (e) => !existingEdgeKeys.has(`${e.source_id}→${e.target_id}`)
+      )
+
+      const mergedNodes = [...graphRef.current.nodes, ...freshNodes]
+      const mergedEdges = [...graphRef.current.edges, ...freshEdges]
+      graphRef.current  = { nodes: mergedNodes, edges: mergedEdges }
+
+      applyGraph(mergedNodes, mergedEdges)
+    } catch (err) {
+      console.error('[NeuroTree] expandNode failed', err)
+      // Restore node to non-growing state on error
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === node.id ? { ...n, data: { ...n.data, growing: false } } : n
+        )
+      )
+    } finally {
+      setGrowingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(node.id)
+        return next
+      })
+    }
+  }, [activeTool, growingIds, applyGraph, setNodes])
 
   // ── Note save handler ─────────────────────────────────────────────────────
   const handleNoteSave = useCallback((edgeId, content) => {
@@ -270,6 +338,7 @@ function Canvas({ graphData }) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onEdgeClick={onEdgeClick}
+        onNodeClick={onNodeClick}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         fitView

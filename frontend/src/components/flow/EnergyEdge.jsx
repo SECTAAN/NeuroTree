@@ -111,16 +111,17 @@ export default function EnergyEdge({
         style={{ filter: 'blur(4px)' }}
       />
 
-      {/* Main cable */}
+      {/* Main cable — cable-draw animates the stroke on first mount */}
       <path
         d={edgePath}
         fill="none"
         stroke="rgba(0,243,255,0.6)"
         strokeWidth={1.5}
         strokeLinecap="round"
+        className="cable-draw"
       />
 
-      {/* Animated energy particle */}
+      {/* Animated energy particle — delayed so it starts after the cable finishes drawing */}
       <path
         d={edgePath}
         fill="none"
@@ -131,15 +132,9 @@ export default function EnergyEdge({
         style={{
           filter: 'drop-shadow(0 0 4px #00F3FF)',
           animation: 'energyParticle 1.8s linear infinite',
+          animationDelay: '0.65s',
         }}
       />
-
-      <style>{`
-        @keyframes energyParticle {
-          0%   { stroke-dashoffset: 100; }
-          100% { stroke-dashoffset: -100; }
-        }
-      `}</style>
 
       {/* ── Edge label markers ─────────────────────────────────────────────── */}
       <EdgeLabelRenderer>

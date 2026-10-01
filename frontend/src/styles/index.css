@@ -291,6 +291,64 @@ html.theme-light .lamp-locked { opacity: 0.22; }
   50%       { filter: brightness(1.35); }
 }
 
+/* ── Node mount — spring pop-in (P4 grow animation) ──────────────────────────
+   Choreography:
+     0%   invisible + collapsed     (scale 0.5, opacity 0)
+     55%  overshoot past natural size (scale 1.12) — the "spring" moment
+     75%  slightly over-corrected smaller (scale 0.96)
+     100% settles at exact natural size (scale 1, opacity 1)
+   Duration 0.55s keeps it snappy; cubic-bezier gives the elastic feel.
+   The transform-origin is 'center bottom' so the lamp appears to grow
+   upward from the cable attachment point (bottom handle).
+──────────────────────────────────────────────────────────────────────────── */
+@keyframes lampPopIn {
+  0%   { opacity: 0;   transform: scale(0.50); }
+  55%  { opacity: 1;   transform: scale(1.12); }
+  75%  {               transform: scale(0.96); }
+  100% {               transform: scale(1.00); }
+}
+
+.lamp-mount {
+  animation: lampPopIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: center bottom;
+}
+
+/* ── Cable draw — stroke-dashoffset sweep (P4 grow animation) ─────────────
+   Works by setting dasharray = a length longer than any cable path will be,
+   then animating dashoffset from that same value down to 0.
+   The result: the stroke appears to "draw itself" from source to target.
+   We use a large fixed value (1200) — React Flow paths are never that long
+   at normal zoom, so the gap portion always hides the "second dash".
+──────────────────────────────────────────────────────────────────────────── */
+@keyframes cableDraw {
+  from { stroke-dashoffset: 1200; }
+  to   { stroke-dashoffset: 0;    }
+}
+
+.cable-draw {
+  stroke-dasharray:  1200;
+  stroke-dashoffset: 1200;
+  animation: cableDraw 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Energy particle — moves a bright dash along the cable continuously */
+@keyframes energyParticle {
+  0%   { stroke-dashoffset:  100; }
+  100% { stroke-dashoffset: -100; }
+}
+
+/* Grow-tool loading ring — expands from the bulb and fades out repeatedly */
+@keyframes growPulse {
+  0%   { transform: scale(0.8);  opacity: 0.9; box-shadow: 0 0 0   0px rgba(0,255,163,0.6); }
+  70%  { transform: scale(1.6);  opacity: 0.3; box-shadow: 0 0 12px 4px rgba(0,255,163,0.3); }
+  100% { transform: scale(1.8);  opacity: 0;   box-shadow: 0 0 18px 6px rgba(0,255,163,0);   }
+}
+
+.lamp-grow-pulse {
+  border: 1.5px solid rgba(0,255,163,0.75);
+  animation: growPulse 1s ease-out infinite;
+}
+
 /* ── Dashboard — New Tree Card (Liquid Glass) ─────────────────────────────── */
 .new-tree-card {
   background:           rgba(255,255,255,0.07);

@@ -148,7 +148,7 @@ export default function LandingPage() {
           className="mt-8 font-mono text-xs transition-opacity duration-700"
           style={{ color: 'rgba(240,242,245,0.2)', opacity: showBtn ? 1 : 0 }}
         >
-          IBM SkillsBuild Hackathon · 2025
+          IBM SkillsBuild Hackathon
         </p>
       </div>
     </div>

@@ -3,12 +3,11 @@ import { useApp } from '../../context/AppContext'
 import MyTreesModal from '../dashboard/MyTreesModal'
 
 /**
- * HamburgerSidebar — glass slide-in panel from the left.
- * Opens when the ☰ button in CollapsibleHeader is clicked.
- * Provides navigation: My Trees (modal), Career Map, Session info.
+ * HamburgerSidebar — slide-in panel from the left.
  *
- * "My Trees" opens MyTreesModal floating above the canvas so the user
- * never loses their place in the Skill Tree.
+ * Theme-aware: uses Tailwind dark: variants + .clay-surface / .clay-card
+ * so it switches seamlessly when the html class toggles between
+ * 'dark' (default) and 'theme-light'.
  */
 export default function HamburgerSidebar({ open, onClose }) {
   const { navigateTo, sessionId, graphData } = useApp()
@@ -31,119 +30,168 @@ export default function HamburgerSidebar({ open, onClose }) {
 
   const shortSession = sessionId ? sessionId.slice(0, 8) + '…' : '—'
 
-  // Generic nav item — closes sidebar then fires action
-  const navItem = (label, icon, action, accent = false) => (
-    <button
-      key={label}
-      onClick={() => { onClose(); action() }}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors hover:bg-white/8 text-left"
-      style={{ color: accent ? 'rgba(0,243,255,0.85)' : 'rgba(240,242,245,0.65)' }}
-    >
-      <span className="w-5 text-center opacity-70 text-base">{icon}</span>
-      {label}
-    </button>
-  )
-
   return (
     <>
-      {/* ── Dark backdrop ──────────────────────────────────────────────── */}
+      {/* ── Backdrop ─────────────────────────────────────────────────────── */}
       <div
         ref={overlayRef}
         onClick={onClose}
         className="fixed inset-0 z-40 transition-opacity duration-300"
         style={{
-          background: 'rgba(0,0,0,0.55)',
+          background: 'rgba(0,0,0,0.45)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
         }}
       />
 
-      {/* ── Sidebar panel ──────────────────────────────────────────────── */}
+      {/* ── Sidebar panel ────────────────────────────────────────────────── */}
       <aside
-        className="fixed top-0 left-0 h-full z-50 flex flex-col"
+        className={[
+          // Layout
+          'fixed top-0 left-0 h-full z-50 flex flex-col',
+          // Theme-aware background — clay-surface handles dark/light bg colour
+          'clay-surface',
+          // Subtle right border — adaptive opacity
+          'border-r border-black/10 dark:border-white/[0.06]',
+        ].join(' ')}
         style={{
           width: 260,
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-          background: 'rgba(18,20,24,0.92)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          borderRight: '1px solid rgba(255,255,255,0.07)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
         }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-white/5">
-          <span
-            className="text-sm font-semibold tracking-widest uppercase"
-            style={{ color: 'rgba(0,243,255,0.7)' }}
-          >
+        {/* ── Header ───────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-black/8 dark:border-white/[0.05]">
+          <span className="text-sm font-semibold tracking-widest uppercase text-cyan-500 dark:text-cyan-400">
             NeuroTree
           </span>
+
+          {/* Close button — adaptive hover */}
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg glass-1 flex items-center justify-center text-white/30 hover:text-white/60 text-xs transition-colors"
+            className={[
+              'w-7 h-7 rounded-lg flex items-center justify-center text-xs',
+              'transition-colors duration-150',
+              'text-slate-400 dark:text-slate-500',
+              'hover:bg-slate-200 dark:hover:bg-slate-800',
+              'hover:text-slate-700 dark:hover:text-slate-200',
+            ].join(' ')}
             aria-label="Close menu"
           >
             ✕
           </button>
         </div>
 
-        {/* Nav items */}
-        <nav className="flex-1 py-3 flex flex-col gap-1 overflow-y-auto px-2">
-          <p className="px-4 py-1 text-[10px] text-white/20 uppercase tracking-widest">Navigate</p>
+        {/* ── Nav items ────────────────────────────────────────────────── */}
+        <nav className="flex-1 py-3 flex flex-col gap-0.5 overflow-y-auto px-2">
 
-          {/* My Trees — opens floating modal, preserves canvas state */}
-          <button
+          {/* Section label */}
+          <p className="px-4 py-1 text-[10px] uppercase tracking-widest font-semibold text-slate-400 dark:text-slate-500">
+            Navigate
+          </p>
+
+          {/* My Trees */}
+          <NavButton
+            icon="🌳"
+            label="My Trees"
             onClick={() => { onClose(); setMyTreesOpen(true) }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors hover:bg-white/8 text-left"
-            style={{ color: 'rgba(240,242,245,0.65)' }}
-          >
-            <span className="w-5 text-center opacity-70 text-base">🌳</span>
-            My Trees
-          </button>
+          />
 
-          {navItem('Skill Tree', '⚡', () => navigateTo('skilltree'), true)}
-          {navItem('Career Map', '🗺️', () => navigateTo('careermap'))}
+          {/* Skill Tree — accent */}
+          <NavButton
+            icon="⚡"
+            label="Skill Tree"
+            accent
+            onClick={() => { onClose(); navigateTo('skilltree') }}
+          />
+
+          {/* Career Map */}
+          <NavButton
+            icon="🗺️"
+            label="Career Map"
+            onClick={() => { onClose(); navigateTo('careermap') }}
+          />
 
           {/* Divider */}
-          <div className="mx-4 my-2 h-px bg-white/5" />
+          <div className="mx-4 my-2 h-px bg-black/8 dark:bg-white/[0.05]" />
 
-          <p className="px-4 py-1 text-[10px] text-white/20 uppercase tracking-widest">Circuit Status</p>
+          {/* Section label */}
+          <p className="px-4 py-1 text-[10px] uppercase tracking-widest font-semibold text-slate-400 dark:text-slate-500">
+            Circuit Status
+          </p>
 
-          {/* Stats mini-card */}
-          <div className="mx-2 p-3 rounded-xl glass-1 flex flex-col gap-2">
-            <div className="flex justify-between text-xs text-white/40">
-              <span>Nodes unlocked</span>
-              <span style={{ color: 'rgba(0,243,255,0.7)' }}>{unlockedNodes}/{totalNodes}</span>
+          {/* Stats card — Soft Claymorphism, matches Dashboard cards exactly */}
+          <div className="mx-2 my-1 p-3 rounded-xl clay-card flex flex-col gap-2.5">
+
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 dark:text-slate-400">Nodes unlocked</span>
+              <span className="font-semibold text-cyan-500 dark:text-cyan-400 tabular-nums">
+                {unlockedNodes}/{totalNodes}
+              </span>
             </div>
-            <div className="flex justify-between text-xs text-white/40">
-              <span>Avg mastery</span>
-              <span style={{ color: 'rgba(0,243,255,0.7)' }}>{avgMastery}%</span>
+
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 dark:text-slate-400">Avg mastery</span>
+              <span className="font-semibold text-cyan-500 dark:text-cyan-400 tabular-nums">
+                {avgMastery}%
+              </span>
             </div>
-            {/* Mastery bar */}
-            <div className="w-full h-1 rounded-full bg-white/8 overflow-hidden">
+
+            {/* Mastery progress bar */}
+            <div className="w-full h-1.5 rounded-full bg-black/10 dark:bg-white/[0.08] overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${avgMastery}%`,
-                  background: 'linear-gradient(90deg, rgba(0,243,255,0.7), rgba(77,124,254,0.5))',
+                  background: 'linear-gradient(90deg, rgba(0,243,255,0.75), rgba(77,124,254,0.55))',
                 }}
               />
             </div>
+
           </div>
         </nav>
 
-        {/* Footer — session ID */}
-        <div className="px-4 py-4 border-t border-white/5">
-          <p className="text-[10px] text-white/20 font-mono">Session: {shortSession}</p>
+        {/* ── Footer — session ID ───────────────────────────────────────── */}
+        <div className="px-4 py-4 border-t border-black/8 dark:border-white/[0.05]">
+          <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+            Session: {shortSession}
+          </p>
         </div>
       </aside>
 
-      {/* ── MyTreesModal — rendered outside sidebar so it appears above everything ── */}
+      {/* ── MyTreesModal — above everything ───────────────────────────── */}
       <MyTreesModal
         open={myTreesOpen}
         onClose={() => setMyTreesOpen(false)}
       />
     </>
+  )
+}
+
+// ── NavButton ─────────────────────────────────────────────────────────────────
+/**
+ * Single navigation item inside the sidebar.
+ * accent=true → cyan tint (for the active/primary route like Skill Tree).
+ */
+function NavButton({ icon, label, onClick, accent = false }) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-left',
+        'transition-colors duration-150',
+        // Hover: adaptive light/dark tint
+        'hover:bg-slate-200/70 dark:hover:bg-slate-800/60',
+        // Text colour
+        accent
+          ? 'text-cyan-500 dark:text-cyan-400'
+          : 'text-slate-600 dark:text-slate-300',
+      ].join(' ')}
+    >
+      <span className="w-5 text-center text-base leading-none">{icon}</span>
+      {label}
+    </button>
   )
 }

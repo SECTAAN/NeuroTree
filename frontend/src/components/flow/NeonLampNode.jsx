@@ -17,6 +17,7 @@ import GlowingNodeCard from './GlowingNodeCard'
  */
 export default function NeonLampNode({ data, selected }) {
   const [cardOpen, setCardOpen] = useState(false)
+  const isGrowing = Boolean(data.growing)
 
   const rawMastery = (data.mastery_score ?? 0) / 100   // 0–1
   const isLocked   = data.status === 'locked'
@@ -89,9 +90,9 @@ export default function NeonLampNode({ data, selected }) {
 
       {/* ── Bulb node body ──────────────────────────────────────────────── */}
       <div
-        className={['lamp-node', stateClass].join(' ')}
+        className={['lamp-node', 'lamp-mount', stateClass].join(' ')}
         style={{ '--mastery': mastery, width: 28, height: 36, borderRadius: 0, background: 'none' }}
-        onClick={() => !isLocked && setCardOpen((v) => !v)}
+        onClick={() => !isLocked && !isGrowing && setCardOpen((v) => !v)}
         title={`${data.label} · ${stateLabel}`}
       >
         {/* Ambient halo (CSS class, fades with mastery) */}
@@ -116,6 +117,14 @@ export default function NeonLampNode({ data, selected }) {
               border: `1.5px solid ${mastery >= 0.8 ? 'rgba(255,210,60,0.75)' : 'rgba(0,220,240,0.75)'}`,
               boxShadow: `0 0 10px ${shadowColor}`,
             }}
+          />
+        )}
+
+        {/* Growing / loading ring — pulsing green ring while expandNode is in-flight */}
+        {isGrowing && (
+          <div
+            className="absolute pointer-events-none lamp-grow-pulse"
+            style={{ inset: '-10px', borderRadius: '50%' }}
           />
         )}
 

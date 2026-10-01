@@ -96,6 +96,18 @@ export default function CyberpunkToolbar({
           onClick={() => onSelectTool('note')}
           accentColor="#bf00ff"
         />
+
+        {/* Divider */}
+        <Divider />
+
+        {/* Grow — progressive branch expansion */}
+        <ToolButton
+          icon={<GrowIcon />}
+          label="Grow — expand knowledge branch (G)"
+          active={activeTool === 'grow'}
+          onClick={() => onSelectTool('grow')}
+          accentColor="#00ffa3"
+        />
       </div>
     </div>
   )
@@ -186,6 +198,25 @@ function WifiIcon() {
       <path d="M4 9.5 C5.5 8 10.5 8 12 9.5"  stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
       <path d="M6 12 C6.8 11 9.2 11 10 12"   stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
       <circle cx="8" cy="13.5" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+function GrowIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      {/* stem */}
+      <line x1="8" y1="14" x2="8" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      {/* left branch */}
+      <path d="M8 10 C6 9 4.5 7.5 5 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+      {/* right branch */}
+      <path d="M8 8.5 C10 7.5 11.5 6 11 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+      {/* left leaf */}
+      <ellipse cx="4.5" cy="4.5" rx="1.5" ry="2" transform="rotate(-30 4.5 4.5)" fill="currentColor" opacity="0.85" />
+      {/* right leaf */}
+      <ellipse cx="11.5" cy="3.5" rx="1.5" ry="2" transform="rotate(25 11.5 3.5)" fill="currentColor" opacity="0.85" />
+      {/* top bud */}
+      <circle cx="8" cy="6.5" r="1.2" fill="currentColor" />
     </svg>
   )
 }
