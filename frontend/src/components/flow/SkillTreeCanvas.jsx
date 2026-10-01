@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   ReactFlow,
-  Background,
   MiniMap,
   useNodesState,
   useEdgesState,
-  BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
 } from '@xyflow/react'
@@ -228,8 +226,44 @@ function Canvas({ graphData }) {
 
   const isLight = theme === 'light'
 
+  // ── Grid colours tuned to app palette ─────────────────────────────────────
+  // Dark : surface #111315, grid lines slightly lighter
+  // Light: surface #f0f2f5, grid lines slightly darker
+  const gridLineColor  = isLight ? '#d4d8df' : '#1e2530'
+  const surfaceColor   = isLight ? '#f0f2f5' : '#111315'
+  // Radial mask fades the grid from transparent at the centre outward to the
+  // surface colour at the edges — creates the "vignette blueprint" look.
+  const radialMaskBg   = isLight
+    ? 'radial-gradient(ellipse at center, transparent 15%, #f0f2f5 75%)'
+    : 'radial-gradient(ellipse at center, transparent 15%, #111315 75%)'
+
   return (
-    <div className="w-full h-full relative" style={{ cursor: cursorStyle }}>
+    // ── Layer 1: surface base colour ──────────────────────────────────────
+    <div
+      className="w-full h-full relative"
+      style={{ background: surfaceColor, cursor: cursorStyle }}
+    >
+      {/* ── Layer 2: Aceternity-style small grid ──────────────────────── */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundSize: '20px 20px',
+          backgroundImage: `
+            linear-gradient(to right,  ${gridLineColor} 1px, transparent 1px),
+            linear-gradient(to bottom, ${gridLineColor} 1px, transparent 1px)
+          `,
+        }}
+      />
+
+      {/* ── Layer 3: Radial vignette mask ─────────────────────────────── */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{ background: radialMaskBg }}
+      />
+
+      {/* ── React Flow (transparent — grid shows through) ─────────────── */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -242,20 +276,13 @@ function Canvas({ graphData }) {
         fitViewOptions={{ padding: 0.35 }}
         minZoom={0.25}
         maxZoom={2.0}
-        // Pan mode: disable node drag + selection when pan active so clicks don't misfire
         nodesDraggable={activeTool !== 'pan'}
         nodesConnectable={false}
         elementsSelectable={activeTool === 'default'}
-        panOnDrag={true}   // always allow canvas pan (drag on empty space)
+        panOnDrag={true}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'transparent' }}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={48}
-          size={1}
-          color={isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.04)'}
-        />
         <MiniMap
           nodeColor={(n) => n.data?.status === 'locked'
             ? (isLight ? '#c8cdd4' : '#2a2d31')
@@ -263,8 +290,8 @@ function Canvas({ graphData }) {
           maskColor={isLight ? 'rgba(220,225,230,0.80)' : 'rgba(17,19,21,0.75)'}
           style={{
             bottom: 20, right: 80, top: 'auto',
-            background: isLight ? 'rgba(255,255,255,0.85)' : 'rgba(17,19,21,0.85)',
-            border: `1px solid ${isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.08)'}`,
+            background: isLight ? 'rgba(240,242,245,0.92)' : 'rgba(17,19,21,0.92)',
+            border: `1px solid ${isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'}`,
           }}
         />
       </ReactFlow>
