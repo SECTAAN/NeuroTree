@@ -1,23 +1,30 @@
 """
 LangFlow Service — AI pipeline orchestrator.
 
-Milestone 2: Returns static MOCK DATA that mirrors the shape of real LangFlow
-             responses.  Every function is clearly marked # MOCK so they can
-             be replaced one-by-one in Milestone 5 with real httpx calls.
+Each public function has two paths:
+  LIVE path  — calls the real LangFlow flow via langflow_client.run_flow().
+               Active when settings.USE_MOCK_AI is False (default).
+  MOCK path  — returns pre-built static data.
+               Active when settings.USE_MOCK_AI is True (demo / offline guard).
 
-Mock data simulates a "Computer Networking" document being processed so the
-demo circuit has meaningful nodes and edges out of the box.
+All mock data is preserved intact so the application remains fully functional
+without a LangFlow connection.
 """
 from __future__ import annotations
 
+import logging
 import random
 
+from app.core.config import get_settings
 from app.schemas.langflow_schema import (
     LangFlowGraphOutput,
     LangFlowNodeChunk,
     LangFlowQuizOutput,
     LangFlowEvalOutput,
+    NT01Output,
 )
+
+logger = logging.getLogger(__name__)
 
 # ── Mock graph seed ────────────────────────────────────────────────────────────
 # Represents the output of Flow A (chunking) + Flow B (graph extraction)
@@ -139,23 +146,89 @@ _MOCK_FEEDBACK_BY_RANGE = {
 }
 
 
-# ── Public API (will be replaced with real httpx calls in Milestone 5) ─────────
+# ── Public API ────────────────────────────────────────────────────────────────
+# Each function checks USE_MOCK_AI first.
+# The LIVE branch will be filled in Phase B / C / D.
 
-async def ingest_and_build_graph(source_text: str) -> LangFlowGraphOutput:  # MOCK
+async def ingest_and_build_graph(source_text: str) -> LangFlowGraphOutput:
     """
-    Flow A + Flow B: Chunk document and extract prerequisite graph.
-    Returns the same mock graph regardless of input text.
+    NT-01: Chunk document and extract prerequisite Knowledge Graph.
+
+    MOCK path (USE_MOCK_AI=True):
+        Returns the hardcoded TCP/IP network graph — unchanged mock behavior.
+
+    LIVE path (USE_MOCK_AI=False):
+        1. Sends source_text to NT-01 via LangFlow API.
+        2. Parses NT-01's JSON output into NT01Output.
+        3. Maps NT-01 schema → internal LangFlowGraphOutput:
+               NT01Chunk.chunk_id   → LangFlowNodeChunk.id
+               NT01Chunk.title      → LangFlowNodeChunk.title
+               NT01Chunk.description→ LangFlowNodeChunk.content
+               (key_concepts left empty — NT-01 does not produce them;
+                NT-02/NT-03 use the content directly)
+               NT01Relationship.source/target_chunk_id → edge source_id/target_id
+               NT01Relationship.relationship_type      → edge relationship
     """
-    # Milestone 5: replace body with httpx call to LangFlow webhook
-    return _MOCK_GRAPH
+    if get_settings().USE_MOCK_AI:
+        return _MOCK_GRAPH
+
+    # ── LIVE path ─────────────────────────────────────────────────────────────
+    from app.services.langflow_client import run_flow, parse_json_output, LangFlowError
+
+    settings = get_settings()
+
+    try:
+        raw_text = await run_flow(
+            flow_id=settings.LANGFLOW_FLOW_NT01,
+            input_value=source_text,
+        )
+    except LangFlowError as exc:
+        logger.error("NT-01 call failed: %s", exc)
+        raise
+
+    raw_dict = parse_json_output(raw_text, settings.LANGFLOW_FLOW_NT01)
+    nt01 = NT01Output.model_validate(raw_dict)
+
+    logger.info(
+        "NT-01 returned topic=%r  chunks=%d  relationships=%d",
+        nt01.topic, len(nt01.chunks), len(nt01.relationships),
+    )
+
+    # ── Mapping: NT-01 → internal graph ───────────────────────────────────────
+    nodes = [
+        LangFlowNodeChunk(
+            id=chunk.chunk_id,
+            title=chunk.title,
+            content=chunk.description,   # NT-01 field name differs
+            key_concepts=[],             # populated by NT-02 in Phase C
+        )
+        for chunk in nt01.chunks
+    ]
+
+    edges = [
+        {
+            "source_id":    rel.source_chunk_id,
+            "target_id":    rel.target_chunk_id,
+            "relationship": rel.relationship_type,
+        }
+        for rel in nt01.relationships
+    ]
+
+    return LangFlowGraphOutput(nodes=nodes, edges=edges)
 
 
-async def generate_quiz_question(node_id: str, key_concepts: list[str]) -> LangFlowQuizOutput:  # MOCK
+async def generate_quiz_question(node_id: str, key_concepts: list[str]) -> LangFlowQuizOutput:
     """
-    Flow C: Generate a fresh quiz question for a given node.
-    Uses random.choice to vary the question each call (simulates LLM temperature).
+    NT-02: Generate a fresh active-recall question for a knowledge chunk.
+
+    MOCK: picks randomly from a per-node question bank.
+    LIVE: calls NT-02 via LangFlow API (Phase C).
     """
-    # Milestone 5: replace body with httpx call to LangFlow webhook
+    if get_settings().USE_MOCK_AI:
+        pool = _MOCK_QUESTIONS.get(node_id, _DEFAULT_QUESTIONS)
+        return LangFlowQuizOutput(question=random.choice(pool))
+
+    # ── LIVE (Phase C — not yet implemented) ──────────────────────────────────
     pool = _MOCK_QUESTIONS.get(node_id, _DEFAULT_QUESTIONS)
     return LangFlowQuizOutput(question=random.choice(pool))
 
@@ -164,21 +237,34 @@ async def evaluate_answer(
     node_title: str,
     key_concepts: list[str],
     user_answer: str,
-) -> LangFlowEvalOutput:  # MOCK
+) -> LangFlowEvalOutput:
     """
-    Flow D: Evaluate user's essay answer and return a score + feedback.
-    Mock score is deterministic based on answer length to simulate AI grading.
+    NT-03: Evaluate the user's essay answer and return mastery score + feedback.
+
+    MOCK: scores by word count to simulate AI grading.
+    LIVE: calls NT-03 via LangFlow API (Phase C).
+
+    Option A confirmed: NT-03's mastery_score is stored directly as the node's
+    mastery (not fed into calculate_progressive_mastery).
     """
-    # Milestone 5: replace body with httpx call to LangFlow webhook
+    if get_settings().USE_MOCK_AI:
+        return _mock_evaluate(user_answer)
+
+    # ── LIVE (Phase C — not yet implemented) ──────────────────────────────────
+    return _mock_evaluate(user_answer)
+
+
+# ── Mock helpers (shared between MOCK path and LIVE placeholder) ──────────────
+
+def _mock_evaluate(user_answer: str) -> LangFlowEvalOutput:
     word_count = len(user_answer.split())
     if word_count >= 20:
-        score = random.randint(75, 95)
+        score    = random.randint(75, 95)
         feedback = random.choice(_MOCK_FEEDBACK_BY_RANGE["high"])
     elif word_count >= 8:
-        score = random.randint(45, 74)
+        score    = random.randint(45, 74)
         feedback = random.choice(_MOCK_FEEDBACK_BY_RANGE["medium"])
     else:
-        score = random.randint(10, 44)
+        score    = random.randint(10, 44)
         feedback = random.choice(_MOCK_FEEDBACK_BY_RANGE["low"])
-
     return LangFlowEvalOutput(score=score, feedback=feedback)

@@ -69,7 +69,7 @@ function computeLayout(apiNodes, apiEdges) {
 function masteryClass(score, status) {
   if (status === 'locked') return 'node-locked'
   if (score >= 100)        return 'node-full'
-  if (score >= 65)         return 'node-bright'
+  if (score >= 70)         return 'node-bright'
   if (score >= 40)         return 'node-medium'
   if (score > 0)           return 'node-low'
   return 'node-low'

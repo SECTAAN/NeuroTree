@@ -28,7 +28,7 @@ export default function NeonLampNode({ data, selected }) {
   const stateLabel =
     isLocked           ? 'Locked'      :
     rawMastery >= 1    ? 'Mastered'    :
-    rawMastery >= 0.65 ? 'Bright'      :
+    rawMastery >= 0.70 ? 'Bright'      :
     rawMastery >= 0.4  ? 'In Progress' :
     rawMastery > 0     ? 'Low'         :
                          'Available'
@@ -36,7 +36,7 @@ export default function NeonLampNode({ data, selected }) {
   const stateClass =
     isLocked           ? 'lamp-locked'   :
     rawMastery >= 1    ? 'lamp-mastered' :
-    rawMastery >= 0.65 ? 'lamp-bright'   :
+    rawMastery >= 0.70 ? 'lamp-bright'   :
     rawMastery >= 0.4  ? 'lamp-medium'   :
                          'lamp-low'
 

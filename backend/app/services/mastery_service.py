@@ -7,11 +7,12 @@ Logika inti:
 Mastery levels (untuk UI lampu):
   LOCKED  :   0.0  (node belum bisa diakses)
   LOW     :   0.1 –  39.9  (lampu remang-remang)
-  MEDIUM  :  40.0 –  64.9  (lampu menyala sedang)
-  BRIGHT  :  65.0 –  99.9  (lampu terang, node berikutnya UNLOCKED)
+  MEDIUM  :  40.0 –  69.9  (lampu menyala sedang)
+  BRIGHT  :  70.0 –  99.9  (lampu terang, node berikutnya UNLOCKED)
   FULL    : 100.0  (lampu penuh 🌟)
 
-Unlock threshold: mastery >= 65.0 membuka node yang bergantung pada node ini.
+Unlock threshold: mastery >= 70.0 membuka node yang bergantung pada node ini.
+Aligned with LangFlow NT_03 (Mastery Evaluator) and NT_04 (Adaptive Learning Agent).
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ from app.models.edge import Edge
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 PROGRESSION_WEIGHT: float = 0.4   # setiap kuis menyumbang maks 40% brightness
-UNLOCK_THRESHOLD: float = 65.0    # mastery >= 65 → node target di-unlock
+UNLOCK_THRESHOLD: float = 70.0    # mastery >= 70 → node target di-unlock (aligned with LangFlow NT_03/NT_04)
 MASTERY_MAX: float = 100.0
 
 
@@ -34,7 +35,7 @@ def get_mastery_level(mastery_score: float) -> str:
         return "LOCKED"
     if mastery_score < 40.0:
         return "LOW"
-    if mastery_score < 65.0:
+    if mastery_score < 70.0:
         return "MEDIUM"
     if mastery_score < 100.0:
         return "BRIGHT"
