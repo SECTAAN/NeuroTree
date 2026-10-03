@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { SESSION_ID } from '../services/api'
+import { SESSION_ID, graphApi } from '../services/api'
 
 const AppContext = createContext(null)
 
@@ -30,7 +30,13 @@ export function AppProvider({ children }) {
   }, [])
 
   // ── Mastery update (called after quiz evaluate response) ───────────────────
+  // 1. Optimistic local update — immediate visual feedback (lamp brightness,
+  //    unlock status for known dependents).
+  // 2. Background re-sync — fetches authoritative graph from DB so edge
+  //    visual states (energy flow) and any cascading unlocks are accurate.
+  //    Fire-and-forget: no loading spinner, silently ignored on error.
   const updateNodeMastery = useCallback((nodeId, newScore, unlockedIds = []) => {
+    // Optimistic update
     setGraphData((prev) => ({
       ...prev,
       nodes: prev.nodes.map((n) => {
@@ -39,6 +45,11 @@ export function AppProvider({ children }) {
         return n
       }),
     }))
+
+    // Background re-sync — updates edge statuses and any cascading unlocks
+    graphApi.fetchGraph()
+      .then(({ data }) => setGraphData(data))
+      .catch(() => { /* silent — optimistic state is still valid */ })
   }, [])
 
   const navigateTo = useCallback((target, treeId = null) => {

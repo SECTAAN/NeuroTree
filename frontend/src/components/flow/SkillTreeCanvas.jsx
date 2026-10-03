@@ -15,7 +15,7 @@ import CyberpunkToolbar from './CyberpunkToolbar'
 import RouterModal      from '../router/RouterModal'
 import NoteModal        from '../notes/NoteModal'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
-import { mockProgressiveApi } from '../../services/api'
+// mockProgressiveApi removed — no /expand endpoint exists yet (Phase F-2+)
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
 function computeLayout(apiNodes, apiEdges) {
@@ -68,9 +68,6 @@ function Canvas({ graphData }) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-
-  // Set of node IDs currently waiting for expandNode response (shows spinner on lamp)
-  const [growingIds, setGrowingIds] = useState(new Set())
 
   // Ref to raw API-shape graph so we can merge without deriving from RF state
   const graphRef = useRef({ nodes: [], edges: [] })
@@ -202,59 +199,14 @@ function Canvas({ graphData }) {
   }, [activeTool, nodes, setEdges])
 
   // ── Node click dispatcher ─────────────────────────────────────────────────
-  const onNodeClick = useCallback(async (event, node) => {
-    if (activeTool !== 'grow') return
-
-    // Prevent expanding a node that is still loading or already has children
-    const alreadyHasChildren = graphRef.current.edges.some(
-      (e) => e.source_id === node.id
-    )
-    if (alreadyHasChildren) return
-    if (growingIds.has(node.id)) return
-
-    // Mark node as loading — NeonLampNode reads data.growing to show spinner
-    setGrowingIds((prev) => new Set([...prev, node.id]))
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.id === node.id ? { ...n, data: { ...n.data, growing: true } } : n
-      )
-    )
-
-    try {
-      const { data } = await mockProgressiveApi.expandNode(node.id, node.data?.label ?? '')
-
-      // Merge: de-duplicate by id before merging
-      const existingNodeIds = new Set(graphRef.current.nodes.map((n) => n.id))
-      const existingEdgeKeys = new Set(
-        graphRef.current.edges.map((e) => `${e.source_id}→${e.target_id}`)
-      )
-
-      const freshNodes = data.nodes.filter((n) => !existingNodeIds.has(n.id))
-      const freshEdges = data.edges.filter(
-        (e) => !existingEdgeKeys.has(`${e.source_id}→${e.target_id}`)
-      )
-
-      const mergedNodes = [...graphRef.current.nodes, ...freshNodes]
-      const mergedEdges = [...graphRef.current.edges, ...freshEdges]
-      graphRef.current  = { nodes: mergedNodes, edges: mergedEdges }
-
-      applyGraph(mergedNodes, mergedEdges)
-    } catch (err) {
-      console.error('[NeuroTree] expandNode failed', err)
-      // Restore node to non-growing state on error
-      setNodes((nds) =>
-        nds.map((n) =>
-          n.id === node.id ? { ...n, data: { ...n.data, growing: false } } : n
-        )
-      )
-    } finally {
-      setGrowingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(node.id)
-        return next
-      })
-    }
-  }, [activeTool, growingIds, applyGraph, setNodes])
+  // 'grow' tool is a future feature (no /expand backend endpoint yet).
+  // The toolbar does not expose it, but keyboard shortcut G can activate it.
+  // Clicking a node while 'grow' is active is intentionally a no-op until
+  // the real expand endpoint is implemented in a later phase.
+  const onNodeClick = useCallback((_event, _node) => {
+    // No action: node card is opened inside NeonLampNode via its own onClick.
+    // 'grow' tool no-op: mockProgressiveApi removed, real endpoint pending.
+  }, [])
 
   // ── Note save handler ─────────────────────────────────────────────────────
   const handleNoteSave = useCallback((edgeId, content) => {

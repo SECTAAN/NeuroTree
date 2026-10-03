@@ -15,3 +15,7 @@ __pycache__/
 # Node
 node_modules/
 dist/
+
+# IBM Bob / project context notes
+phase*.md
+langflow.md

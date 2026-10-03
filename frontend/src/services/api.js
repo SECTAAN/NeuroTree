@@ -12,9 +12,16 @@ import axios from 'axios'
 // Generates and persists a UUID in localStorage so the same user
 // keeps their graph across page refreshes.
 function getOrCreateSessionId() {
-  // Hardcoded for development — points to the mock session seeded in the backend.
-  // Revert to crypto.randomUUID() before production.
-  return '123e4567-e89b-12d3-a456-426614174000'
+  try {
+    const stored = localStorage.getItem('neurotree-session-id')
+    if (stored) return stored
+    const id = crypto.randomUUID()
+    localStorage.setItem('neurotree-session-id', id)
+    return id
+  } catch {
+    // Fallback for environments where localStorage or crypto is unavailable
+    return 'fallback-' + Math.random().toString(36).slice(2, 18)
+  }
 }
 
 export const SESSION_ID = getOrCreateSessionId()
@@ -93,6 +100,12 @@ export const quizApi = {
 
   /** GET /api/v1/quiz/recommend */
   recommend: () => api.get('/api/v1/quiz/recommend'),
+}
+
+export const careerApi = {
+  /** POST /api/v1/career/pathway */
+  pathway: (careerGoal) =>
+    api.post('/api/v1/career/pathway', { career_goal: careerGoal }),
 }
 
 // ── Mock Progressive Growth API (P4 — used until backend endpoint is ready) ───

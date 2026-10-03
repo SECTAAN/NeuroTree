@@ -14,6 +14,9 @@ class Node(Base):
     Represents a single knowledge chunk (light bulb) in the circuit.
     mastery_score: 0.0 – 100.0 (battery level)
     status: 'locked' | 'unlocked'
+    last_expected_answer: most recent NT-02 expected_answer for this node,
+        stored server-side so NT-03 can use it during evaluation without
+        ever exposing it to the frontend.
     """
     __tablename__ = "nodes"
 
@@ -26,6 +29,7 @@ class Node(Base):
     key_concepts: Mapped[Any] = mapped_column(JSON, nullable=True, default=list)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="locked")
     mastery_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    last_expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     # Relationships
     session: Mapped["Session"] = relationship(
