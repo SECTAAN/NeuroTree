@@ -157,10 +157,12 @@ export default function SkillTree() {
   }
 
   // Navigation to recommended node's quiz
+  // Raw API-shape nodes from graphData have `title` but not `label`.
+  // QuizModal renders node.label — normalise here so the header is correct.
   function handleGoToRecommendation(node) {
     if (!node || node.status === 'locked') return
     setRecommendation(null)
-    openQuiz(node)
+    openQuiz({ ...node, label: node.label ?? node.title })
   }
 
   const totalNodes    = graphData?.nodes?.length ?? 0

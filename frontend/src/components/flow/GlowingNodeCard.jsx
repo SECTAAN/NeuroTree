@@ -44,7 +44,7 @@ export default function GlowingNodeCard({ node, onClose }) {
           border: `1px solid ${isLocked ? 'rgba(255,255,255,0.08)' : 'rgba(0,243,255,0.2)'}`,
         }}
       >
-        {isLocked ? '🔒 Locked' : mastery >= 100 ? '🌟 Mastered' : mastery >= 70 ? '⚡ In Progress' : '💡 Available'}
+        {isLocked ? '🔒 Locked' : mastery >= 100 ? '🌟 Mastered' : mastery >= 70 ? '🔓 Bright' : '💡 Available'}
       </span>
 
       {/* Mastery bar */}

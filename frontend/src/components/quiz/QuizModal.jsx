@@ -101,7 +101,7 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
   }
 
   const masteryColor =
-    result?.new_mastery_score >= 80 ? '#00FFA3' :
+    result?.new_mastery_score >= 70 ? '#00FFA3' :
     result?.new_mastery_score >= 60 ? '#00F3FF' :
     result?.new_mastery_score >= 40 ? '#4D7CFE' :
                                       'rgba(255,255,255,0.4)'

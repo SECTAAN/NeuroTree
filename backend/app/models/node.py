@@ -30,6 +30,8 @@ class Node(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="locked")
     mastery_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     last_expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    # F-5: stores the NT-02 question text so NT-03 can evaluate against the actual question
+    last_question: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, server_default="")
 
     # Relationships
     session: Mapped["Session"] = relationship(

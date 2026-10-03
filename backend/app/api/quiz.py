@@ -57,10 +57,11 @@ async def generate_quiz(
         node_title=node.title or "",
     )
 
-    # Persist expected_answer server-side so evaluate endpoint can use it
-    # without the frontend ever seeing it.
+    # Persist expected_answer and question server-side so the evaluate endpoint
+    # can use them without the frontend ever seeing them.
     try:
         node.last_expected_answer = result.expected_answer or ""
+        node.last_question = result.question or ""
         db.commit()
         db.refresh(node)
     except Exception:
@@ -109,6 +110,7 @@ async def evaluate_answer(
         node_content=node.content or "",
         previous_mastery=node.mastery_score,
         expected_answer=node.last_expected_answer or "",
+        question=node.last_question or "",
     )
 
     try:

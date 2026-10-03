@@ -289,6 +289,7 @@ async def evaluate_answer(
     node_content: str = "",
     previous_mastery: float = 0.0,
     expected_answer: str = "",
+    question: str = "",
 ) -> LangFlowEvalOutput:
     """
     NT-03: Evaluate the user's essay answer and return mastery score + feedback.
@@ -299,6 +300,10 @@ async def evaluate_answer(
     LIVE path (USE_MOCK_AI=False):
         Sends {question, expected_answer, chunk_content, previous_mastery,
         user_answer} to NT-03 and returns its mastery_score directly.
+
+    The `question` parameter should be the actual NT-02 generated question text
+    (stored as node.last_question). Falls back to key_concepts[0] or node_title
+    for backward compatibility when last_question is empty.
 
     Option A: NT-03's mastery_score is stored as-is in Node.mastery_score.
               calculate_progressive_mastery() is NOT called on this path.
@@ -312,10 +317,13 @@ async def evaluate_answer(
 
     settings = get_settings()
 
+    # Use the actual NT-02 question if available; fall back for backward compat
+    resolved_question = question or (key_concepts[0] if key_concepts else node_title)
+
     import json as _json
     eval_payload = _json.dumps(
         {
-            "question":         key_concepts[0] if key_concepts else node_title,
+            "question":         resolved_question,
             "expected_answer":  expected_answer,
             "chunk_content":    node_content,
             "previous_mastery": previous_mastery,
