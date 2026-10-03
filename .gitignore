@@ -1,0 +1,17 @@
+# Bob / MCP configuration
+.bob/mcp.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+dist/
