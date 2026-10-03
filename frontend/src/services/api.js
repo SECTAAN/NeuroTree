@@ -84,9 +84,19 @@ export const graphApi = {
   /** GET /api/v1/node/:id — full node content for learning mode */
   fetchNode: (nodeId) => api.get(`/api/v1/node/${nodeId}`),
 
-  /** POST /api/v1/material/ingest — submit source text for AI processing */
-  ingest: (sourceText) =>
-    api.post('/api/v1/material/ingest', { source_text: sourceText }),
+  /**
+   * POST /api/v1/material/ingest — submit source text for AI processing.
+   * F-2: treeName + learningGoal are optional; omitting them is backward compatible.
+   */
+  ingest: (sourceText, treeName = '', learningGoal = '') =>
+    api.post('/api/v1/material/ingest', {
+      source_text:   sourceText,
+      tree_name:     treeName,
+      learning_goal: learningGoal,
+    }),
+
+  /** GET /api/v1/sessions — dashboard session history (F-2) */
+  fetchSessions: () => api.get('/api/v1/sessions'),
 }
 
 export const quizApi = {

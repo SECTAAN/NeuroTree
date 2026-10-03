@@ -5,12 +5,16 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   // ── Navigation state (replaces React Router for simplicity) ───────────────
-  // page: 'landing' | 'dashboard' | 'skilltree'
+  // page: 'landing' | 'dashboard' | 'skilltree' | 'careermap'
   const [page, setPage]           = useState('landing')
   const [activeTreeId, setActiveTreeId] = useState(null)
 
   // ── Graph data ─────────────────────────────────────────────────────────────
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] })
+
+  // ── F-2: Tree identity (set during ingest, survives within session) ────────
+  const [treeName, setTreeName]         = useState('')
+  const [learningGoal, setLearningGoal] = useState('')
 
   // ── Selected node (for GlowingNodeCard) ───────────────────────────────────
   const [selectedNode, setSelectedNode] = useState(null)
@@ -52,9 +56,23 @@ export function AppProvider({ children }) {
       .catch(() => { /* silent — optimistic state is still valid */ })
   }, [])
 
-  const navigateTo = useCallback((target, treeId = null) => {
+  /**
+   * navigateTo — navigate to a page.
+   *
+   * F-2 extension: accepts optional metadata object for 'skilltree' target.
+   *   navigateTo('skilltree', { treeName, learningGoal })
+   *   navigateTo('skilltree', treeId)  // legacy string form still supported
+   */
+  const navigateTo = useCallback((target, meta = null) => {
     setPage(target)
-    if (treeId) setActiveTreeId(treeId)
+    if (typeof meta === 'string') {
+      // Legacy: navigateTo('skilltree', treeId)
+      setActiveTreeId(meta)
+    } else if (meta && typeof meta === 'object') {
+      // F-2: navigateTo('skilltree', { treeName, learningGoal })
+      if (meta.treeName  !== undefined) setTreeName(meta.treeName)
+      if (meta.learningGoal !== undefined) setLearningGoal(meta.learningGoal)
+    }
   }, [])
 
   return (
@@ -62,6 +80,8 @@ export function AppProvider({ children }) {
       page, navigateTo,
       activeTreeId,
       graphData, setGraphData,
+      treeName,  setTreeName,
+      learningGoal, setLearningGoal,
       selectedNode, setSelectedNode,
       quizOpen, quizNode, openQuiz, closeQuiz,
       updateNodeMastery,

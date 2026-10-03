@@ -12,6 +12,17 @@ class IngestRequest(BaseModel):
         max_length=5000,
         description="Isi dokumen/buku teks yang akan diproses AI.",
     )
+    # F-2: optional tree identity — persisted to Session row
+    tree_name: str = Field(
+        default="",
+        max_length=255,
+        description="Nama learning tree (misal: Jaringan Komputer).",
+    )
+    learning_goal: str = Field(
+        default="",
+        max_length=1000,
+        description="Tujuan belajar (misal: Persiapan CCNA).",
+    )
 
     @field_validator("source_text")
     @classmethod

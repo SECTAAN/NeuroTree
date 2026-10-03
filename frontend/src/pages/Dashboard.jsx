@@ -1,14 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { graphApi } from '../services/api'
 import NewTreeDialog from '../components/newtree/NewTreeDialog'
-
-// ── Mock session history ──────────────────────────────────────────────────────
-const MOCK_TREES = [
-  { id: 'tree_network', name: 'Computer Networks',     mastery: 45, nodes: 8,  lastStudied: 'Today' },
-  { id: 'tree_python',  name: 'Python Fundamentals',   mastery: 72, nodes: 12, lastStudied: 'Yesterday' },
-  { id: 'tree_db',      name: 'Database Fundamentals', mastery: 86, nodes: 15, lastStudied: '3 days ago' },
-]
 
 // Mastery accent colours — cyberpunk neon on clay base
 function masteryColor(pct) {
@@ -51,30 +44,91 @@ function TreeCard({ tree, onClick }) {
       </div>
 
       <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500">
-        <span className="font-medium" style={{ color: line }}>{tree.mastery}%</span>
+        <span className="font-medium" style={{ color: line }}>{Math.round(tree.mastery)}%</span>
         <span>{tree.nodes} nodes</span>
       </div>
     </button>
   )
 }
 
+// ── Empty state — shown when no sessions exist yet ────────────────────────────
+function EmptySessionState({ onNewTree }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="clay-icon w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+        <span className="text-2xl text-slate-400 dark:text-slate-500">⚡</span>
+      </div>
+      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+        No trees yet
+      </p>
+      <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
+        Create your first learning session to get started.
+      </p>
+      <button
+        onClick={onNewTree}
+        className="clay-card px-5 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-300
+          hover:-translate-y-0.5 transition-transform duration-200"
+      >
+        + New Tree
+      </button>
+    </div>
+  )
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const { navigateTo, setGraphData, sessionId } = useApp()
-  const [dialogOpen, setDialogOpen]             = useState(false)
-  const [headerCollapsed, setHeaderCollapsed]   = useState(false)
-  const [loading, setLoading]                   = useState(false)
+  const { navigateTo, setGraphData, setTreeName, setLearningGoal, sessionId } = useApp()
+  const [dialogOpen, setDialogOpen]         = useState(false)
+  const [headerCollapsed, setHeaderCollapsed] = useState(false)
+  const [navLoading, setNavLoading]         = useState(false)
 
-  async function handleOpenTree(treeId) {
-    setLoading(true)
+  // ── F-2: real session history ─────────────────────────────────────────────
+  const [sessions, setSessions]     = useState([])
+  const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [sessionsError, setSessionsError]     = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setSessionsLoading(true)
+    graphApi.fetchSessions()
+      .then(({ data }) => {
+        if (!cancelled) {
+          // Map API shape → TreeCard shape
+          const mapped = (data.sessions || []).map((s) => ({
+            id:          s.session_id,
+            name:        s.tree_name || 'My Tree',
+            mastery:     s.avg_mastery ?? 0,
+            nodes:       s.total_nodes ?? 0,
+            lastStudied: s.last_studied || 'Today',
+            treeName:    s.tree_name,
+            learningGoal: s.learning_goal,
+          }))
+          setSessions(mapped)
+          setSessionsLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setSessionsError(err.message)
+          setSessionsLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  async function handleOpenTree(tree) {
+    setNavLoading(true)
+    // Set tree identity in context for SkillTree header
+    setTreeName(tree.treeName || tree.name || '')
+    setLearningGoal(tree.learningGoal || '')
     try {
       const { data } = await graphApi.fetchGraph()
       setGraphData(data)
-      navigateTo('skilltree', treeId)
+      navigateTo('skilltree')
     } catch {
-      navigateTo('skilltree', treeId)
+      navigateTo('skilltree')
     } finally {
-      setLoading(false)
+      setNavLoading(false)
     }
   }
 
@@ -173,19 +227,50 @@ export default function Dashboard() {
           <p className="text-xs tracking-widest uppercase mb-4 text-slate-400 dark:text-slate-500">
             Your Trees
           </p>
-          <div className="grid gap-4">
-            {MOCK_TREES.map((tree) => (
-              <TreeCard
-                key={tree.id}
-                tree={tree}
-                onClick={() => handleOpenTree(tree.id)}
-              />
-            ))}
-          </div>
+
+          {/* Loading skeleton */}
+          {sessionsLoading && (
+            <div className="grid gap-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="clay-card rounded-3xl p-5 animate-pulse">
+                  <div className="h-3 bg-slate-300/50 dark:bg-slate-700/50 rounded mb-3 w-1/2" />
+                  <div className="h-1.5 bg-slate-300/40 dark:bg-slate-700/40 rounded mb-2.5" />
+                  <div className="h-3 bg-slate-300/30 dark:bg-slate-700/30 rounded w-1/4" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error state */}
+          {!sessionsLoading && sessionsError && (
+            <div className="text-center py-8">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Could not load sessions — backend may be offline.
+              </p>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!sessionsLoading && !sessionsError && sessions.length === 0 && (
+            <EmptySessionState onNewTree={() => setDialogOpen(true)} />
+          )}
+
+          {/* Real session cards */}
+          {!sessionsLoading && !sessionsError && sessions.length > 0 && (
+            <div className="grid gap-4">
+              {sessions.map((tree) => (
+                <TreeCard
+                  key={tree.id}
+                  tree={tree}
+                  onClick={() => handleOpenTree(tree)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Loading overlay */}
-        {loading && (
+        {/* Navigation overlay */}
+        {navLoading && (
           <div
             className="fixed inset-0 z-40 flex items-center justify-center"
             style={{ background: 'rgba(17,19,21,0.70)', backdropFilter: 'blur(8px)' }}

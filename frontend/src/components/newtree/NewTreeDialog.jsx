@@ -83,7 +83,8 @@ export default function NewTreeDialog({ onClose }) {
       const text = await resolveSourceText(source)
       advance(1)  // Extracting
 
-      const { data } = await graphApi.ingest(text)
+      // F-2: pass tree identity so backend can persist it on the Session row
+      const { data } = await graphApi.ingest(text, metadata.treeName, metadata.learningGoal)
       advance(2)  // Identifying prerequisites
 
       // Fetch the resulting graph
@@ -97,7 +98,7 @@ export default function NewTreeDialog({ onClose }) {
       // Navigate after brief success feedback (Rule: no sudden navigation)
       setTimeout(() => {
         onClose()
-        navigateTo('skilltree')
+        navigateTo('skilltree', { treeName: metadata.treeName, learningGoal: metadata.learningGoal })
       }, 1200)
 
     } catch (err) {
