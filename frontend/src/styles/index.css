@@ -1,0 +1,615 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables — Theme System (10.4) ──────────────────────────────────── */
+/* Dark mode defaults (default — no class needed).                             */
+:root {
+  --bg-primary:    #111315;
+  --bg-secondary:  #151719;
+  --bg-elevated:   #202326;
+  --accent-cyan:   #00F3FF;
+  --accent-purple: #BF00FF;
+  --accent-blue:   #4D7CFE;
+  --accent-green:  #00FFA3;
+  --text-primary:  #F0F2F5;
+  --text-muted:    rgba(240,242,245,0.5);
+  --border-subtle: rgba(255,255,255,0.07);
+  --border-glass:  rgba(255,255,255,0.12);
+
+  /* Node label — dark mode */
+  --text-node-label:  rgba(240,242,245,0.70);
+  --text-node-locked: rgba(255,255,255,0.25);
+  /* Toolbar icon hover — dark mode */
+  --toolbar-icon-hover: rgba(240,242,245,0.85);
+}
+
+/* ── Global Reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  margin: 0; padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Elegant Background (10.3) ────────────────────────────────────────────── */
+.bg-app {
+  background-color: #111315;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(77,124,254,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 0% 0%,   rgba(0,243,255,0.04)  0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 100% 20%, rgba(191,0,255,0.04)  0%, transparent 60%);
+}
+
+/* ── Glass Levels (10.5) ──────────────────────────────────────────────────── */
+/* Level 1 — Subtle */
+.glass-1 {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+/* Level 2 — Standard */
+.glass-2 {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+/* Level 3 — Focus (modal, quiz) */
+.glass-3 {
+  background: rgba(26,29,33,0.85);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+
+/* ── Claymorphism Surface (Dashboard cards + header) ─────────────────────── */
+/*
+  Soft claymorphism formula (polished, not aggressive):
+
+  Surface colour = slightly raised above page background.
+  Dark  surface: #1c2535  (a shade lighter than #111315 page bg)
+  Light surface: #eaeef4  (a shade darker  than #f0f2f5 page bg)
+
+  Shadow palette (rgba so opacity is tunable without new hex values):
+  Dark:
+    outer-dark  = rgba(0,0,0, 0.40)       — soft depth shadow
+    outer-light = rgba(255,255,255, 0.04) — very faint ambient lift
+    inset-light = rgba(255,255,255, 0.05) — subtle inner catch-light
+    inset-dark  = rgba(0,0,0, 0.28)       — gentle inner recession
+
+  Light:
+    outer-dark  = rgba(160,170,185, 0.55) — warm gray shadow
+    outer-light = rgba(255,255,255, 0.90) — crisp white highlight
+    inset-light = rgba(255,255,255, 0.95) — inner top shine
+    inset-dark  = rgba(160,170,185, 0.40) — inner bottom recession
+*/
+
+/* ── Shared surface class — used by both cards AND header ─────────────────── */
+.clay-surface {
+  background-color: #1c2535;
+}
+html.theme-light .clay-surface {
+  background-color: #eaeef4;
+}
+
+/* ── Card shadow (resting) ────────────────────────────────────────────────── */
+.clay-card {
+  background-color: #1c2535;
+  box-shadow:
+     4px  4px 10px rgba(0,0,0,0.40),
+    -3px -3px  8px rgba(255,255,255,0.04),
+    inset  1px  1px 2px rgba(255,255,255,0.05),
+    inset -1px -1px 2px rgba(0,0,0,0.28);
+}
+
+html.theme-light .clay-card {
+  background-color: #eaeef4;
+  box-shadow:
+     4px  4px 10px rgba(160,170,185,0.55),
+    -3px -3px  8px rgba(255,255,255,0.90),
+    inset  1px  1px 2px rgba(255,255,255,0.95),
+    inset -1px -1px 2px rgba(160,170,185,0.40);
+}
+
+/* ── Card shadow (hover — gently rises) ──────────────────────────────────── */
+.clay-card:hover {
+  box-shadow:
+     6px  6px 14px rgba(0,0,0,0.45),
+    -4px -4px 10px rgba(255,255,255,0.05),
+    inset  1px  1px 2px rgba(255,255,255,0.05),
+    inset -1px -1px 2px rgba(0,0,0,0.28);
+}
+html.theme-light .clay-card:hover {
+  box-shadow:
+     6px  6px 14px rgba(150,160,175,0.55),
+    -4px -4px 10px rgba(255,255,255,0.95),
+    inset  1px  1px 2px rgba(255,255,255,0.95),
+    inset -1px -1px 2px rgba(150,160,175,0.40);
+}
+
+/* ── Card shadow (active/pressed — sinks in) ─────────────────────────────── */
+.clay-card:active {
+  box-shadow:
+     2px  2px  5px rgba(0,0,0,0.40),
+    -1px -1px  4px rgba(255,255,255,0.04),
+    inset  2px  2px 5px rgba(0,0,0,0.32),
+    inset -2px -2px 5px rgba(255,255,255,0.04);
+}
+html.theme-light .clay-card:active {
+  box-shadow:
+     2px  2px  5px rgba(160,170,185,0.45),
+    -1px -1px  4px rgba(255,255,255,0.80),
+    inset  2px  2px 5px rgba(160,170,185,0.45),
+    inset -2px -2px 5px rgba(255,255,255,0.80);
+}
+
+/* ── Header clay shadow (no hover state — static element) ────────────────── */
+.clay-header {
+  background-color: #1c2535;
+  box-shadow:
+     3px  3px  8px rgba(0,0,0,0.38),
+    -2px -2px  6px rgba(255,255,255,0.04),
+    inset  1px  1px 1px rgba(255,255,255,0.05),
+    inset -1px -1px 1px rgba(0,0,0,0.25);
+}
+html.theme-light .clay-header {
+  background-color: #eaeef4;
+  box-shadow:
+     3px  3px  8px rgba(155,165,180,0.50),
+    -2px -2px  6px rgba(255,255,255,0.92),
+    inset  1px  1px 1px rgba(255,255,255,0.95),
+    inset -1px -1px 1px rgba(155,165,180,0.35);
+}
+
+/* ── Concave icon well inside a clay card ────────────────────────────────── */
+.clay-icon {
+  background-color: #1c2535;
+  box-shadow:
+    inset  2px  2px 5px rgba(0,0,0,0.35),
+    inset -2px -2px 5px rgba(255,255,255,0.04);
+}
+html.theme-light .clay-icon {
+  background-color: #eaeef4;
+  box-shadow:
+    inset  2px  2px 5px rgba(160,170,185,0.50),
+    inset -2px -2px 5px rgba(255,255,255,0.90);
+}
+
+/* ── Toolbar pill — CyberpunkToolbar container ────────────────────────────── */
+/* Same surface as cards, pill-shaped (rounded-[2rem] set in JSX).            */
+.clay-toolbar {
+  background-color: #1c2535;
+  box-shadow:
+     3px  3px  8px rgba(0,0,0,0.38),
+    -2px -2px  6px rgba(255,255,255,0.04),
+    inset  1px  1px 1px rgba(255,255,255,0.05),
+    inset -1px -1px 1px rgba(0,0,0,0.25);
+}
+html.theme-light .clay-toolbar {
+  background-color: #eaeef4;
+  box-shadow:
+     3px  3px  8px rgba(155,165,180,0.50),
+    -2px -2px  6px rgba(255,255,255,0.92),
+    inset  1px  1px 1px rgba(255,255,255,0.95),
+    inset -1px -1px 1px rgba(155,165,180,0.35);
+}
+
+/* ── Toolbar button — active/pressed state ────────────────────────────────── */
+/* Overrides the flush-transparent default; simulates pressing into the pill.  */
+.clay-btn-active {
+  background-color: #1c2535;          /* same as pill = seamless blend */
+  box-shadow:
+    inset  2px  2px 5px rgba(0,0,0,0.38),
+    inset -2px -2px 5px rgba(255,255,255,0.04);
+}
+html.theme-light .clay-btn-active {
+  background-color: #eaeef4;
+  box-shadow:
+    inset  2px  2px 5px rgba(155,165,180,0.48),
+    inset -2px -2px 5px rgba(255,255,255,0.90);
+}
+
+/* ── Liquid Glass Button (10.5) ───────────────────────────────────────────── */
+.btn-liquid {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(0,200,255,0.05) 50%, rgba(180,0,255,0.05) 100%);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  color: rgba(240,242,245,0.9);
+}
+.btn-liquid:hover {
+  border-color: rgba(0,243,255,0.4);
+  box-shadow: 0 0 16px rgba(0,243,255,0.25), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.18);
+  transform: translateY(-1px);
+}
+.btn-liquid:active { transform: translateY(0); }
+
+/* Shimmer sweep */
+.btn-liquid::before {
+  content: '';
+  position: absolute; top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  transition: left 0.5s ease;
+}
+.btn-liquid:hover::before { left: 150%; }
+
+/* ── Neon Lamp Node — SVG Lightbulb (10.14, 10.46) ───────────────────────── */
+/* .lamp-node is now a bare container; all visual state lives in the SVG.      */
+/* --mastery (0–1) is set inline; SVG drop-shadow is computed in JSX.          */
+.lamp-node {
+  --mastery: 0;
+  position: relative;
+  cursor: pointer;
+  /* Size overridden per-node inline (28×36) */
+  transition: transform 0.2s ease, filter 0.3s ease;
+}
+.lamp-node:hover { transform: scale(1.18); }
+
+/* Ambient radial halo — fades with mastery, positioned by inline inset */
+.lamp-halo {
+  position: absolute;
+  pointer-events: none;
+  opacity: calc(var(--mastery) * 0.75);
+  background: radial-gradient(circle, rgba(0,220,240,0.35) 0%, transparent 65%);
+  animation: glowPulse 2.8s ease-in-out infinite;
+}
+/* High-mastery nodes switch halo to warm amber */
+.lamp-mastered .lamp-halo {
+  background: radial-gradient(circle, rgba(255,210,60,0.45) 0%, transparent 65%);
+}
+
+/* State opacity classes — applied to the .lamp-node wrapper */
+.lamp-locked   { opacity: 0.28; filter: grayscale(0.6); }
+.lamp-low      { opacity: 0.60; }
+.lamp-medium   { opacity: 0.78; }
+.lamp-bright   { opacity: 0.92; }
+.lamp-mastered { opacity: 1;    animation: glowPulse 2.8s ease-in-out infinite; }
+
+/* Light-mode lamp adjustments — reduce glow opacity on white background */
+html.theme-light .lamp-halo {
+  opacity: calc(var(--mastery) * 0.45);
+}
+html.theme-light .lamp-locked { opacity: 0.22; }
+
+@keyframes glowPulse {
+  0%, 100% { filter: brightness(0.88); }
+  50%       { filter: brightness(1.35); }
+}
+
+/* ── Node mount — spring pop-in (P4 grow animation) ──────────────────────────
+   Choreography:
+     0%   invisible + collapsed     (scale 0.5, opacity 0)
+     55%  overshoot past natural size (scale 1.12) — the "spring" moment
+     75%  slightly over-corrected smaller (scale 0.96)
+     100% settles at exact natural size (scale 1, opacity 1)
+   Duration 0.55s keeps it snappy; cubic-bezier gives the elastic feel.
+   The transform-origin is 'center bottom' so the lamp appears to grow
+   upward from the cable attachment point (bottom handle).
+──────────────────────────────────────────────────────────────────────────── */
+@keyframes lampPopIn {
+  0%   { opacity: 0;   transform: scale(0.50); }
+  55%  { opacity: 1;   transform: scale(1.12); }
+  75%  {               transform: scale(0.96); }
+  100% {               transform: scale(1.00); }
+}
+
+.lamp-mount {
+  animation: lampPopIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: center bottom;
+}
+
+/* ── Cable draw — stroke-dashoffset sweep (P4 grow animation) ─────────────
+   Works by setting dasharray = a length longer than any cable path will be,
+   then animating dashoffset from that same value down to 0.
+   The result: the stroke appears to "draw itself" from source to target.
+   We use a large fixed value (1200) — React Flow paths are never that long
+   at normal zoom, so the gap portion always hides the "second dash".
+──────────────────────────────────────────────────────────────────────────── */
+@keyframes cableDraw {
+  from { stroke-dashoffset: 1200; }
+  to   { stroke-dashoffset: 0;    }
+}
+
+.cable-draw {
+  stroke-dasharray:  1200;
+  stroke-dashoffset: 1200;
+  animation: cableDraw 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Energy particle — moves a bright dash along the cable continuously */
+@keyframes energyParticle {
+  0%   { stroke-dashoffset:  100; }
+  100% { stroke-dashoffset: -100; }
+}
+
+/* Grow-tool loading ring — expands from the bulb and fades out repeatedly */
+@keyframes growPulse {
+  0%   { transform: scale(0.8);  opacity: 0.9; box-shadow: 0 0 0   0px rgba(0,255,163,0.6); }
+  70%  { transform: scale(1.6);  opacity: 0.3; box-shadow: 0 0 12px 4px rgba(0,255,163,0.3); }
+  100% { transform: scale(1.8);  opacity: 0;   box-shadow: 0 0 18px 6px rgba(0,255,163,0);   }
+}
+
+.lamp-grow-pulse {
+  border: 1.5px solid rgba(0,255,163,0.75);
+  animation: growPulse 1s ease-out infinite;
+}
+
+/* ── Dashboard — New Tree Card (Liquid Glass) ─────────────────────────────── */
+.new-tree-card {
+  background:           rgba(255,255,255,0.07);
+  backdrop-filter:      blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border:               1px solid rgba(255,255,255,0.13);
+  box-shadow:           inset 0 1px 1px rgba(255,255,255,0.12);
+  transition:           background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+.new-tree-card:hover {
+  background:   rgba(255,255,255,0.13);
+  border-color: rgba(0,210,230,0.35);
+  box-shadow:   inset 0 1px 1px rgba(255,255,255,0.20), 0 6px 28px rgba(0,220,255,0.14);
+  transform:    translateY(-3px);
+}
+/* Light mode — slightly more opaque white glass */
+html.theme-light .new-tree-card {
+  background:   rgba(255,255,255,0.55);
+  border-color: rgba(0,0,0,0.09);
+  box-shadow:   inset 0 1px 0 rgba(255,255,255,0.90), 0 2px 12px rgba(0,0,0,0.06);
+}
+html.theme-light .new-tree-card:hover {
+  background:   rgba(255,255,255,0.72);
+  border-color: rgba(0,160,200,0.30);
+  box-shadow:   inset 0 1px 0 rgba(255,255,255,1), 0 6px 20px rgba(0,160,200,0.12);
+}
+
+/* ── Energy Edge ───────────────────────────────────────────────────────────── */
+.energy-edge-path {
+  stroke: var(--accent-cyan);
+  stroke-width: 2;
+  fill: none;
+  filter: drop-shadow(0 0 3px rgba(0,243,255,0.5));
+}
+.energy-edge-locked {
+  stroke: rgba(255,255,255,0.12);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 4 4;
+  filter: none;
+}
+.energy-particle {
+  animation: particleFlow 1.8s linear infinite;
+}
+@keyframes particleFlow {
+  0%   { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* ── Glowing Card (Aceternity-style) ──────────────────────────────────────── */
+.glowing-card {
+  position: relative;
+}
+.glowing-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 20%,
+    var(--accent-cyan) 40%,
+    var(--accent-purple) 60%,
+    transparent 80%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderRotate 3s linear infinite;
+  opacity: 0.7;
+}
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes borderRotate {
+  to { --angle: 360deg; }
+}
+
+/* ── Encrypted Text ────────────────────────────────────────────────────────── */
+.encrypted-char {
+  display: inline-block;
+  transition: opacity 0.05s;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,243,255,0.3); }
+
+/* ── React Flow overrides ──────────────────────────────────────────────────── */
+.react-flow__renderer,
+.react-flow__background { background: transparent !important; }
+.react-flow__handle {
+  width: 8px !important; height: 8px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--accent-cyan) !important;
+  background: #111315 !important;
+}
+.react-flow__handle:hover { background: var(--accent-cyan) !important; }
+.react-flow__controls {
+  background: rgba(17,19,21,0.8) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  color: rgba(0,243,255,0.7) !important;
+  fill: rgba(0,243,255,0.7) !important;
+}
+.react-flow__controls-button:hover {
+  background: rgba(0,243,255,0.08) !important;
+}
+.react-flow__minimap {
+  background: rgba(17,19,21,0.85) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+}
+
+/* ── Light Mode Overrides (P3 — spec 10.61) ───────────────────────────────── */
+/* html.theme-light is added/removed by useCanvasTools (applyThemeClass).     */
+/* Tailwind dark: variants are driven by html.dark (also toggled there).      */
+/* Only surface/color values change — layout, interactions, and learning data */
+/* are fully preserved (spec 10.61 requirement).                              */
+
+html.theme-light {
+  --bg-primary:    #F0F2F5;
+  --bg-secondary:  #E8EAED;
+  --bg-elevated:   #FFFFFF;
+  --text-primary:  #1A1D21;
+  --text-muted:    rgba(26,29,33,0.55);
+  --border-subtle: rgba(0,0,0,0.07);
+  --border-glass:  rgba(0,0,0,0.10);
+
+  /* Node label — light mode */
+  --text-node-label:  rgba(30,35,42,0.75);
+  --text-node-locked: rgba(0,0,0,0.25);
+  /* Toolbar icon hover — light mode */
+  --toolbar-icon-hover: rgba(30,35,42,0.90);
+}
+
+html.theme-light,
+html.theme-light body,
+html.theme-light #root {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Background — warm light gray with soft ambient radials */
+html.theme-light .bg-app {
+  background-color: #F0F2F5;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(77,124,254,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 0% 0%,   rgba(0,200,255,0.03)  0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 100% 20%, rgba(150,0,200,0.03)  0%, transparent 60%);
+}
+
+/* Glass Level 1 */
+html.theme-light .glass-1 {
+  background: rgba(255,255,255,0.55);
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Glass Level 2 */
+html.theme-light .glass-2 {
+  background: rgba(255,255,255,0.75);
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.90);
+}
+
+/* Glass Level 3 (modals, quiz) */
+html.theme-light .glass-3 {
+  background: rgba(248,249,252,0.97);
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,1);
+}
+
+/* Liquid button */
+html.theme-light .btn-liquid {
+  background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(220,240,255,0.7) 50%, rgba(230,200,255,0.5) 100%);
+  border-color: rgba(0,0,0,0.12);
+  color: rgba(26,29,33,0.85);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.06);
+}
+html.theme-light .btn-liquid:hover {
+  border-color: rgba(0,180,220,0.5);
+  box-shadow: 0 0 14px rgba(0,180,220,0.18), 0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1);
+}
+
+/* Scrollbar */
+html.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+html.theme-light ::-webkit-scrollbar-thumb:hover { background: rgba(0,150,200,0.35); }
+
+/* Neon lamp — reduce glow intensity, keep it legible on white */
+html.theme-light .lamp-halo {
+  opacity: calc(var(--mastery) * 0.5);
+}
+html.theme-light .lamp-core {
+  box-shadow:
+    0 0 calc(4px  + var(--mastery)*12px) rgba(0,160,200,calc(0.25 + var(--mastery)*0.35)),
+    0 0 calc(8px  + var(--mastery)*24px) rgba(0,160,200,calc(0.08 + var(--mastery)*0.12));
+  border-color: rgba(0,160,200,calc(0.25 + var(--mastery)*0.5));
+}
+
+/* React Flow handle — light mode */
+html.theme-light .react-flow__handle {
+  border-color: rgba(0,150,200,0.7) !important;
+  background: #F0F2F5 !important;
+}
+html.theme-light .react-flow__handle:hover {
+  background: rgba(0,150,200,0.8) !important;
+}
+
+/* React Flow controls — light mode */
+html.theme-light .react-flow__controls {
+  background: rgba(255,255,255,0.90) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+html.theme-light .react-flow__controls-button {
+  color: rgba(0,100,160,0.8) !important;
+  fill: rgba(0,100,160,0.8) !important;
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+html.theme-light .react-flow__controls-button:hover {
+  background: rgba(0,140,190,0.08) !important;
+}
+
+/* ── GlassCard — light mode: more opaque glass, softer backglow ───────────── */
+/* The Layer 3 glass panel uses inline styles (rgba(255,255,255,0.05)) which   */
+/* is invisible on a light background. We patch the selector here.             */
+html.theme-light .glass-card-panel {
+  background:           rgba(255,255,255,0.60) !important;
+  border-top-color:     rgba(255,255,255,0.95) !important;
+  border-left-color:    rgba(255,255,255,0.80) !important;
+  border-right-color:   rgba(0,0,0,0.06) !important;
+  border-bottom-color:  rgba(0,0,0,0.06) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(0,0,0,0.05),
+              0 2px 10px rgba(0,0,0,0.05) !important;
+}
+/* Backglow is too strong on white — reduce it */
+html.theme-light .glass-card-backglow {
+  opacity: 0.25 !important;
+}
+html.theme-light .glass-card-wrapper:hover .glass-card-backglow {
+  opacity: 0.45 !important;
+}
+
+/* Card entrance animation (used by NoteModal, RouterModal) */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* glowPulse used by RouterModal loading state + lamp-mastered */
+@keyframes glowPulse {
+  0%, 100% { filter: brightness(0.9); }
+  50%       { filter: brightness(1.4); }
+}

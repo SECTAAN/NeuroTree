@@ -1,0 +1,25 @@
+# Bob / MCP configuration
+.bob/mcp.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+
+# IBM Bob / project context notes
+phase*.md
+langflow.md
+
+bob_handoff_f2.md
+backend/neurotree.db.bak
+.bob/

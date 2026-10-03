@@ -1,0 +1,14 @@
+# Environments
+.venv/
+.env
+
+# Konfigurasi AI Local / Bob MCP
+.bob/mcp.json
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Database
+*.db
+*.sqlite3
