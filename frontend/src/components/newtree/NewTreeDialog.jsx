@@ -19,12 +19,16 @@ function isSourceValid(source) {
 }
 
 // ── Extract plain text from source for backend ───────────────────────────────
-// File/image extraction (OCR) is Milestone 5 (LangFlow). For now, convert
-// non-text sources to a descriptive placeholder so the API call still works.
+// F-4: PDF/DOCX files are sent to POST /api/v1/material/extract which returns
+// the real plain text (capped at 5 000 chars).
+// Camera/OCR remains a placeholder until a future phase.
 async function resolveSourceText(source) {
   if (source.sourceType === 'text') return source.text.trim()
-  if (source.sourceType === 'document') return `[Document: ${source.file.name}]`
-  if (source.sourceType === 'image')    return `[Camera scan: ${source.images.length} image(s)]`
+  if (source.sourceType === 'document') {
+    const { data } = await graphApi.extractFile(source.file)
+    return data.extracted_text
+  }
+  if (source.sourceType === 'image') return `[Camera scan: ${source.images.length} image(s)]`
   return ''
 }
 

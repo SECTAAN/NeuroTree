@@ -97,6 +97,20 @@ export const graphApi = {
 
   /** GET /api/v1/sessions — dashboard session history (F-2) */
   fetchSessions: () => api.get('/api/v1/sessions'),
+
+  /**
+   * POST /api/v1/material/extract — F-4: extract plain text from a PDF or DOCX file.
+   * Returns { extracted_text, char_count, truncated }.
+   * The caller should pass extracted_text to graphApi.ingest().
+   */
+  extractFile: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/api/v1/material/extract', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
+  },
 }
 
 export const quizApi = {
