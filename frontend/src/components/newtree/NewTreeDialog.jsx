@@ -94,6 +94,16 @@ export default function NewTreeDialog({ onClose }) {
       // Fetch the resulting graph
       const graphRes = await graphApi.fetchGraph()
       advance(3)  // Building tree
+
+      // P0-5: detect empty graph — do not navigate if no nodes were produced
+      const nodes = graphRes.data?.nodes ?? []
+      if (nodes.length === 0) {
+        throw new Error(
+          'The AI could not extract any knowledge from your material. ' +
+          'Please try with more detailed or structured content.'
+        )
+      }
+
       setGraphData(graphRes.data)
       advance(4)  // Preparing Skill Tree
 

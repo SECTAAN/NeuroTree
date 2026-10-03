@@ -93,7 +93,7 @@ export const graphApi = {
       source_text:   sourceText,
       tree_name:     treeName,
       learning_goal: learningGoal,
-    }),
+    }, { timeout: 90000 }),
 
   /** GET /api/v1/sessions — dashboard session history (F-2) */
   fetchSessions: () => api.get('/api/v1/sessions'),
