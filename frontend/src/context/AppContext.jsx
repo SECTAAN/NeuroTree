@@ -1,12 +1,37 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { SESSION_ID, graphApi } from '../services/api'
 
 const AppContext = createContext(null)
 
+// ── sessionStorage key for page persistence (P0-2) ────────────────────────────
+const PAGE_KEY = 'neurotree-page'
+
+// Pages that are safe to restore on refresh (skip 'landing' — first load
+// should always show the landing screen for new tabs/sessions).
+const RESTORABLE_PAGES = new Set(['dashboard', 'skilltree', 'careermap'])
+
+function readPersistedPage() {
+  try {
+    const stored = sessionStorage.getItem(PAGE_KEY)
+    return RESTORABLE_PAGES.has(stored) ? stored : 'landing'
+  } catch {
+    return 'landing'
+  }
+}
+
+function persistPage(page) {
+  try {
+    sessionStorage.setItem(PAGE_KEY, page)
+  } catch {
+    // sessionStorage unavailable — silent, no crash
+  }
+}
+
 export function AppProvider({ children }) {
   // ── Navigation state (replaces React Router for simplicity) ───────────────
   // page: 'landing' | 'dashboard' | 'skilltree' | 'careermap'
-  const [page, setPage]           = useState('landing')
+  // Initialise from sessionStorage so refresh restores the correct page.
+  const [page, setPage]           = useState(() => readPersistedPage())
   const [activeTreeId, setActiveTreeId] = useState(null)
 
   // ── Graph data ─────────────────────────────────────────────────────────────
@@ -32,6 +57,22 @@ export function AppProvider({ children }) {
     setQuizOpen(false)
     setQuizNode(null)
   }, [])
+
+  // ── P0-2: Restore treeName/learningGoal after a refresh to 'skilltree' ─────
+  // On mount, if we restored to 'skilltree' but treeName is empty, pull it
+  // from GET /api/v1/sessions (same fallback already in SkillTree.jsx for F-2).
+  // This runs once on mount and is a no-op when treeName is already populated.
+  useEffect(() => {
+    if (page !== 'skilltree' || treeName) return
+    graphApi.fetchSessions()
+      .then(({ data }) => {
+        const first = data?.sessions?.[0]
+        if (first?.tree_name)    setTreeName(first.tree_name)
+        if (first?.learning_goal) setLearningGoal(first.learning_goal)
+      })
+      .catch(() => { /* silent — header will show blank, non-blocking */ })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // ^ intentionally run only on mount; page/treeName deps would re-fire on navigation
 
   // ── Mastery update (called after quiz evaluate response) ───────────────────
   // 1. Optimistic local update — immediate visual feedback (lamp brightness,
@@ -62,9 +103,12 @@ export function AppProvider({ children }) {
    * F-2 extension: accepts optional metadata object for 'skilltree' target.
    *   navigateTo('skilltree', { treeName, learningGoal })
    *   navigateTo('skilltree', treeId)  // legacy string form still supported
+   *
+   * F-6 P0-2: persists the target page to sessionStorage so refresh restores it.
    */
   const navigateTo = useCallback((target, meta = null) => {
     setPage(target)
+    persistPage(target)
     if (typeof meta === 'string') {
       // Legacy: navigateTo('skilltree', treeId)
       setActiveTreeId(meta)

@@ -7,16 +7,9 @@ import { graphApi } from '../../services/api'
  * Opened from HamburgerSidebar so users can switch trees without leaving
  * the Skill Tree canvas.
  *
- * Uses the same MOCK_TREES list as Dashboard for MVP consistency.
- * Swap `MOCK_TREES` for a real API call in Milestone 6.
+ * F-6 P0-1: loads real session data from GET /api/v1/sessions.
+ * Uses the same API and mapping logic as Dashboard.jsx.
  */
-
-// ── Mock data (mirrors Dashboard.jsx until real tree-list API exists) ─────────
-const MOCK_TREES = [
-  { id: 'tree_network', name: 'Computer Networks',     mastery: 45, nodes: 8,  lastStudied: 'Today'     },
-  { id: 'tree_python',  name: 'Python Fundamentals',   mastery: 72, nodes: 12, lastStudied: 'Yesterday' },
-  { id: 'tree_db',      name: 'Database Fundamentals', mastery: 86, nodes: 15, lastStudied: '3 days ago' },
-]
 
 // ── TreeRow — compact card for the modal list ─────────────────────────────────
 function TreeRow({ tree, onClick, active }) {
@@ -57,7 +50,7 @@ function TreeRow({ tree, onClick, active }) {
 
       {/* Mastery % */}
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <span className="text-xs font-mono" style={{ color: masteryColor }}>{tree.mastery}%</span>
+        <span className="text-xs font-mono" style={{ color: masteryColor }}>{Math.round(tree.mastery)}%</span>
         <div className="w-16 h-0.5 rounded-full bg-white/8 overflow-hidden">
           <div
             className="h-full rounded-full"
@@ -74,8 +67,38 @@ function TreeRow({ tree, onClick, active }) {
 
 // ── MyTreesModal ──────────────────────────────────────────────────────────────
 export default function MyTreesModal({ open, onClose }) {
-  const { navigateTo, activeTreeId, setGraphData } = useApp()
-  const [loading, setLoading] = useState(false)
+  const { navigateTo, sessionId, setGraphData, setTreeName, setLearningGoal } = useApp()
+
+  // ── Real session data (mirrors Dashboard.jsx mapping) ─────────────────────
+  const [trees, setTrees]           = useState([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [loadingTreeId, setLoadingTreeId]     = useState(null)  // session_id being opened
+
+  // Fetch sessions whenever the modal opens
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setSessionsLoading(true)
+    graphApi.fetchSessions()
+      .then(({ data }) => {
+        if (cancelled) return
+        const mapped = (data.sessions || []).map((s) => ({
+          id:           s.session_id,
+          name:         s.tree_name || 'My Tree',
+          mastery:      s.avg_mastery ?? 0,
+          nodes:        s.total_nodes ?? 0,
+          lastStudied:  s.last_studied || 'Today',
+          treeName:     s.tree_name,
+          learningGoal: s.learning_goal,
+        }))
+        setTrees(mapped)
+        setSessionsLoading(false)
+      })
+      .catch(() => {
+        if (!cancelled) setSessionsLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [open])
 
   // Close on Escape
   useEffect(() => {
@@ -85,19 +108,24 @@ export default function MyTreesModal({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  async function handleSelectTree(treeId) {
-    setLoading(true)
+  async function handleSelectTree(tree) {
+    setLoadingTreeId(tree.id)
+    // Set tree identity in context immediately (same pattern as Dashboard.jsx)
+    setTreeName(tree.treeName || tree.name || '')
+    setLearningGoal(tree.learningGoal || '')
     try {
       const { data } = await graphApi.fetchGraph()
       setGraphData(data)
     } catch {
       // Silently fall through — SkillTree page will re-fetch on mount
     } finally {
-      setLoading(false)
+      setLoadingTreeId(null)
     }
     onClose()
-    navigateTo('skilltree', treeId)
+    navigateTo('skilltree', { treeName: tree.treeName || tree.name, learningGoal: tree.learningGoal || '' })
   }
+
+  const isLoading = loadingTreeId !== null
 
   return (
     <>
@@ -139,7 +167,9 @@ export default function MyTreesModal({ open, onClose }) {
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/5">
             <div>
               <h2 className="text-sm font-semibold text-white/90">My Trees</h2>
-              <p className="text-xs text-white/30 mt-0.5">{MOCK_TREES.length} learning circuits</p>
+              <p className="text-xs text-white/30 mt-0.5">
+                {sessionsLoading ? 'Loading…' : `${trees.length} learning circuit${trees.length !== 1 ? 's' : ''}`}
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -153,12 +183,26 @@ export default function MyTreesModal({ open, onClose }) {
 
           {/* ── Tree list ──────────────────────────────────────────────── */}
           <div className="px-3 py-3 flex flex-col gap-2 max-h-72 overflow-y-auto">
-            {MOCK_TREES.map((tree) => (
+            {sessionsLoading && (
+              <div className="py-6 text-center">
+                <p className="text-xs text-white/30 font-mono animate-pulse tracking-widest">
+                  LOADING CIRCUITS…
+                </p>
+              </div>
+            )}
+
+            {!sessionsLoading && trees.length === 0 && (
+              <div className="py-6 text-center">
+                <p className="text-xs text-white/25">No trees yet. Create one from the Dashboard.</p>
+              </div>
+            )}
+
+            {!sessionsLoading && trees.map((tree) => (
               <TreeRow
                 key={tree.id}
                 tree={tree}
-                active={tree.id === activeTreeId}
-                onClick={() => handleSelectTree(tree.id)}
+                active={tree.id === sessionId}
+                onClick={() => !isLoading && handleSelectTree(tree)}
               />
             ))}
           </div>
@@ -173,7 +217,7 @@ export default function MyTreesModal({ open, onClose }) {
             </button>
 
             {/* Loading indicator while fetching graph */}
-            {loading && (
+            {isLoading && (
               <span className="text-xs text-white/30 font-mono animate-pulse flex items-center gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-cyan animate-ping" />
                 Loading circuit…
