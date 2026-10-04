@@ -22,7 +22,15 @@ from app.models.node import Node
 from app.models.edge import Edge
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-PROGRESSION_WEIGHT: float = 0.4   # setiap kuis menyumbang maks 40% brightness
+PROGRESSION_WEIGHT: float = 0.4   # per-question weight (calculate_progressive_mastery)
+# F-7B.1: session-specific weight, deliberately lower than PROGRESSION_WEIGHT.
+# Tuned so that 3 perfect sessions (100,100,100) × 3 reach ≥ 70:
+#   session 1: 0   + 100 × 0.25 = 25
+#   session 2: 25  + 100 × 0.25 = 50
+#   session 3: 50  + 100 × 0.25 = 75  → BRIGHT ✓
+# One perfect session yields 25 (LOW), two yield 50 (MEDIUM) — lamp never jumps
+# straight to BRIGHT from a single quiz session.
+SESSION_PROGRESSION_WEIGHT: float = 0.25
 UNLOCK_THRESHOLD: float = 70.0    # mastery >= 70 → node target di-unlock (aligned with LangFlow NT_03/NT_04)
 MASTERY_MAX: float = 100.0
 
@@ -52,6 +60,44 @@ def calculate_progressive_mastery(previous_mastery: float, ai_score: int) -> flo
     new_mastery       = min(100, previous_mastery + gained_brightness)
     """
     gained = ai_score * PROGRESSION_WEIGHT
+    return min(MASTERY_MAX, previous_mastery + gained)
+
+
+def calculate_session_mastery(
+    previous_mastery: float,
+    session_scores: list[float],
+) -> float:
+    """
+    F-7B.1: Derive the new mastery score from a completed 3-question quiz session.
+
+    Algorithm:
+      1. Average the raw NT-03 scores collected during the session.
+      2. Apply SESSION_PROGRESSION_WEIGHT (0.25) to the average.
+      3. Accumulate onto previous_mastery, capped at MASTERY_MAX.
+
+    Uses SESSION_PROGRESSION_WEIGHT (0.25), NOT PROGRESSION_WEIGHT (0.4), so that
+    a single perfect session raises mastery by at most 25 points:
+      session 1 (100,100,100): 0  → 25   (LOW)
+      session 2 (100,100,100): 25 → 50   (MEDIUM)
+      session 3 (100,100,100): 50 → 75   (BRIGHT ✓)
+
+    This keeps calculate_progressive_mastery() and PROGRESSION_WEIGHT unchanged
+    for any other callers.
+
+    Args:
+        previous_mastery: Node.mastery_score before this session started.
+        session_scores:   List of raw float scores from NT-03, one per question.
+                          Must be non-empty; typically length 3.
+
+    Returns:
+        New mastery_score (float, 0.0 – 100.0).
+    """
+    if not session_scores:
+        # Safety guard: no scores → no change
+        return previous_mastery
+
+    avg_score = sum(session_scores) / len(session_scores)
+    gained    = avg_score * SESSION_PROGRESSION_WEIGHT
     return min(MASTERY_MAX, previous_mastery + gained)
 
 

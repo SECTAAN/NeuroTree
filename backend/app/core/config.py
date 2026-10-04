@@ -18,7 +18,10 @@ class Settings(BaseSettings):
     ]
 
     # Rate Limiting
-    RATE_LIMIT_QUIZ: str = "5/minute"
+    # F-7B: raised from 5 to 20/minute — a 3-question session costs 3 evaluate
+    # calls + 3 generate calls (= 6 total); 20/minute gives comfortable headroom
+    # for two concurrent sessions without hitting the limit.
+    RATE_LIMIT_QUIZ: str = "20/minute"
     RATE_LIMIT_INGEST: str = "3/minute"
 
     # ── LangFlow ──────────────────────────────────────────────────────────────

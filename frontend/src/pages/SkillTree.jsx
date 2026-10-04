@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useApp } from '../context/AppContext'
-import { graphApi, quizApi } from '../services/api'
+import { graphApi, quizApi, activeSession } from '../services/api'
 import SkillTreeCanvas     from '../components/flow/SkillTreeCanvas'
 import QuizModal           from '../components/quiz/QuizModal'
 import CollapsibleHeader   from '../components/layout/CollapsibleHeader'
@@ -17,9 +17,10 @@ const PRIORITY_STYLE = {
 function RecommendationChip({ rec, graphNodes, onGoTo, onDismiss }) {
   if (!rec) return null
 
-  const style     = PRIORITY_STYLE[rec.priority] ?? PRIORITY_STYLE.medium
+  const style      = PRIORITY_STYLE[rec.priority] ?? PRIORITY_STYLE.medium
   const targetNode = graphNodes.find((n) => n.id === rec.target_chunk_id)
-  const isLocked   = targetNode ? targetNode.status === 'locked' : false
+  const nodeReady  = !!targetNode                          // P1-5: node must exist in graph
+  const isLocked   = nodeReady && targetNode.status === 'locked'
   const hasTarget  = !!rec.target_chunk_id && !!rec.target_chunk_title
 
   const pct = rec.progress_summary?.completion_percentage ?? 0
@@ -60,18 +61,22 @@ function RecommendationChip({ rec, graphNodes, onGoTo, onDismiss }) {
         )}
       </div>
 
-      {/* Go arrow — disabled if locked or no valid target */}
+      {/* Go arrow — disabled if target not yet in graph, or locked */}
       {hasTarget && (
         <button
-          onClick={!isLocked ? () => onGoTo(targetNode) : undefined}
-          title={isLocked ? 'Unlock prerequisites first' : `Study "${rec.target_chunk_title}"`}
-          disabled={isLocked || !targetNode}
+          onClick={nodeReady && !isLocked ? () => onGoTo(targetNode) : undefined}
+          title={
+            !nodeReady  ? 'Graph is updating…'          :
+            isLocked    ? 'Unlock prerequisites first'  :
+                          `Study "${rec.target_chunk_title}"`
+          }
+          disabled={!nodeReady || isLocked}
           className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg transition-all duration-200
             disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
-            background: isLocked ? 'transparent' : `rgba(0,243,255,0.08)`,
-            border:     `1px solid ${isLocked ? 'rgba(148,163,184,0.2)' : style.border}`,
-            color:      isLocked ? 'rgba(148,163,184,0.4)' : style.text,
+            background: (!nodeReady || isLocked) ? 'transparent' : `rgba(0,243,255,0.08)`,
+            border:     `1px solid ${(!nodeReady || isLocked) ? 'rgba(148,163,184,0.2)' : style.border}`,
+            color:      (!nodeReady || isLocked) ? 'rgba(148,163,184,0.4)' : style.text,
           }}
         >
           {isLocked ? '🔒' : 'Go →'}
@@ -122,13 +127,17 @@ export default function SkillTree() {
     return () => { cancelled = true }
   }, [])
 
-  // F-2: Recover tree name from backend if context lost (e.g. page refresh)
+  // F-2 / F-6: Recover tree name from backend if context lost (e.g. page refresh).
+  // Use activeSession.id to find the right session when multiple trees exist.
   useEffect(() => {
     if (treeName) return  // already set — nothing to do
     graphApi.fetchSessions()
       .then(({ data }) => {
-        const first = data?.sessions?.[0]
-        if (first?.tree_name) setTreeName(first.tree_name)
+        const sid = activeSession.id
+        const match = sid
+          ? (data?.sessions ?? []).find((s) => s.session_id === sid)
+          : data?.sessions?.[0]
+        if (match?.tree_name) setTreeName(match.tree_name)
       })
       .catch(() => { /* silent — treeName stays empty */ })
   }, [treeName])

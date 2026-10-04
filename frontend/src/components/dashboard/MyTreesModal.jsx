@@ -15,10 +15,10 @@ import { graphApi } from '../../services/api'
 function TreeRow({ tree, onClick, active }) {
   const [hovered, setHovered] = useState(false)
 
+  // Thresholds aligned with the 70-mastery rule (mastery >= 70 → mastered/bright).
   const masteryColor =
-    tree.mastery >= 80 ? 'rgba(0,255,163,0.7)'  :
-    tree.mastery >= 60 ? 'rgba(0,243,255,0.7)'  :
-    tree.mastery >= 40 ? 'rgba(77,124,254,0.7)' :
+    tree.mastery >= 70 ? 'rgba(0,255,163,0.7)'  :
+    tree.mastery >  0  ? 'rgba(0,243,255,0.7)'  :
                          'rgba(255,255,255,0.3)'
 
   return (
@@ -67,7 +67,7 @@ function TreeRow({ tree, onClick, active }) {
 
 // ── MyTreesModal ──────────────────────────────────────────────────────────────
 export default function MyTreesModal({ open, onClose }) {
-  const { navigateTo, sessionId, setGraphData, setTreeName, setLearningGoal } = useApp()
+  const { navigateTo, sessionId, setGraphData, setTreeName, setLearningGoal, setActiveSessionId } = useApp()
 
   // ── Real session data (mirrors Dashboard.jsx mapping) ─────────────────────
   const [trees, setTrees]           = useState([])
@@ -110,6 +110,9 @@ export default function MyTreesModal({ open, onClose }) {
 
   async function handleSelectTree(tree) {
     setLoadingTreeId(tree.id)
+    // F-6: set active session BEFORE fetching graph so the request carries
+    // the correct X-Session-ID and returns this tree's nodes/edges only.
+    setActiveSessionId(tree.id)
     // Set tree identity in context immediately (same pattern as Dashboard.jsx)
     setTreeName(tree.treeName || tree.name || '')
     setLearningGoal(tree.learningGoal || '')

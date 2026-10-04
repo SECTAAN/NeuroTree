@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import List, TYPE_CHECKING
-from sqlalchemy import String, DateTime, Text
+from sqlalchemy import String, DateTime, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -23,6 +23,15 @@ class Session(Base):
         DateTime,
         default=datetime.utcnow,
         nullable=False,
+    )
+    # Multi-session: stable browser/user identity (X-User-ID).
+    # Backfilled to uuid for rows created before this column existed.
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        nullable=False,
+        default="",
+        server_default="",
+        index=True,
     )
     # F-2: tree identity set during material ingest
     tree_name: Mapped[str] = mapped_column(

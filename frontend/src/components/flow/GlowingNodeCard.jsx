@@ -11,9 +11,8 @@ export default function GlowingNodeCard({ node, onClose }) {
   const isLocked   = node.status === 'locked'
 
   const masteryColor =
-    mastery >= 80 ? '#00FFA3' :
-    mastery >= 60 ? '#00F3FF' :
-    mastery >= 40 ? '#4D7CFE' :
+    mastery >= 70 ? '#00FFA3' :
+    mastery >  0  ? '#00F3FF' :
                     'rgba(255,255,255,0.3)'
 
   return (

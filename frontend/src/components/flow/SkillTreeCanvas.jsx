@@ -18,6 +18,7 @@ import { useCanvasTools } from '../../hooks/useCanvasTools'
 // mockProgressiveApi removed — no /expand endpoint exists yet (Phase F-2+)
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
+// Returns { positions, depth } — depth map is preserved for progressive reveal.
 function computeLayout(apiNodes, apiEdges) {
   const inCount = {}
   apiNodes.forEach((n) => { inCount[n.id] = 0 })
@@ -55,7 +56,7 @@ function computeLayout(apiNodes, apiEdges) {
       }
     })
   })
-  return positions
+  return { positions, depth }
 }
 
 const NODE_TYPES = { neonLamp: NeonLampNode }
@@ -69,22 +70,37 @@ function Canvas({ graphData }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
-  // Ref to raw API-shape graph so we can merge without deriving from RF state
-  const graphRef = useRef({ nodes: [], edges: [] })
+  // Ref to raw API-shape graph + depth map so we can merge without deriving from RF state
+  const graphRef = useRef({ nodes: [], edges: [], depth: {} })
+
+  // ── Progressive reveal state ──────────────────────────────────────────────
+  // revealedDepth: the deepest BFS layer currently shown (0 = root only).
+  // growingNodeId: node currently showing the pulse animation before reveal.
+  const [revealedDepth, setRevealedDepth] = useState(0)
+  const [growingNodeId, setGrowingNodeId] = useState(null)
 
   // ── Modal state ───────────────────────────────────────────────────────────
   // routerModal: full context object { sourceNodeId, targetNodeId, sourceLabel, targetLabel, ... }
   const [routerModal, setRouterModal] = useState(null)
   const [noteModal,   setNoteModal]   = useState(null)   // { edgeId, note } | null
 
-  // ── Shared helper: build RF nodes+edges from raw API-shape arrays ─────────
-  const applyGraph = useCallback((apiNodes, apiEdges) => {
-    const positions = computeLayout(apiNodes, apiEdges)
-    const labelMap  = {}
+  // ── Build filtered RF node/edge arrays from the full graph ────────────────
+  // maxDepth: only nodes at depth <= maxDepth are included.
+  // Edges are included only when BOTH source and target are within maxDepth.
+  const buildRFArrays = useCallback((apiNodes, apiEdges, depthMap, maxDepth, labelMapRef) => {
+    const { positions } = computeLayout(apiNodes, apiEdges)
+    const labelMap = labelMapRef ?? {}
     apiNodes.forEach((n) => { labelMap[n.id] = n.title })
 
-    setNodes(
-      apiNodes.map((n) => ({
+    const visibleIds = new Set(
+      apiNodes
+        .filter((n) => (depthMap[n.id] ?? 0) <= maxDepth)
+        .map((n) => n.id)
+    )
+
+    const rfNodes = apiNodes
+      .filter((n) => visibleIds.has(n.id))
+      .map((n) => ({
         id:       n.id,
         type:     'neonLamp',
         position: positions[n.id] ?? { x: 0, y: 0 },
@@ -97,10 +113,10 @@ function Canvas({ graphData }) {
           id:            n.id,
         },
       }))
-    )
 
-    setEdges(
-      apiEdges.map((e, idx) => {
+    const rfEdges = apiEdges
+      .filter((e) => visibleIds.has(e.source_id) && visibleIds.has(e.target_id))
+      .map((e, idx) => {
         const edgeId = `e-${e.source_id}-${e.target_id}-${idx}`
         return {
           id:     edgeId,
@@ -125,18 +141,72 @@ function Canvas({ graphData }) {
           },
         }
       })
-    )
+
+    return { rfNodes, rfEdges }
+  }, [setRouterModal, setNoteModal])
+
+  // ── Apply a set of RF nodes+edges to React Flow state ─────────────────────
+  const applyRFArrays = useCallback(({ rfNodes, rfEdges }) => {
+    setNodes(rfNodes)
+    setEdges(rfEdges)
   }, [setNodes, setEdges])
 
-  // ── Build React Flow nodes/edges from API graph data ─────────────────────
+  // ── Single effect handling both initial load and mastery re-sync ──────────
+  // We distinguish the two cases by comparing node-ID sets:
+  //   • Different ID set (or first load)  → brand-new graph → reset revealedDepth to 0
+  //   • Same ID set                       → mastery re-sync → patch visible nodes only,
+  //                                         preserve revealedDepth so revealed layers stay
+  const prevNodeIdsRef = useRef(new Set())
   useEffect(() => {
     if (!graphData?.nodes?.length) return
-    graphRef.current = {
-      nodes: graphData.nodes,
-      edges: graphData.edges,
+
+    const newIds  = new Set(graphData.nodes.map((n) => n.id))
+    const prevIds = prevNodeIdsRef.current
+
+    const isSameGraph =
+      prevIds.size > 0 &&
+      newIds.size === prevIds.size &&
+      [...newIds].every((id) => prevIds.has(id))
+
+    prevNodeIdsRef.current = newIds
+
+    if (isSameGraph) {
+      // ── Mastery re-sync: only patch mastery/status on already-visible nodes
+      setNodes((prev) =>
+        prev.map((rfNode) => {
+          const updated = graphData.nodes.find((n) => n.id === rfNode.id)
+          if (!updated) return rfNode
+          return {
+            ...rfNode,
+            data: {
+              ...rfNode.data,
+              mastery_score: updated.mastery_score,
+              status:        updated.status,
+            },
+          }
+        })
+      )
+      // Refresh stored raw nodes so future Grow reveals use fresh mastery data
+      graphRef.current = {
+        ...graphRef.current,
+        nodes: graphData.nodes,
+        edges: graphData.edges,
+      }
+      return
     }
-    applyGraph(graphData.nodes, graphData.edges)
-  }, [graphData, applyGraph])
+
+    // ── Brand-new graph: reset to depth-0 reveal ──────────────────────────
+    const { depth } = computeLayout(graphData.nodes, graphData.edges)
+    graphRef.current = { nodes: graphData.nodes, edges: graphData.edges, depth }
+
+    setRevealedDepth(0)
+    setGrowingNodeId(null)
+
+    const { rfNodes, rfEdges } = buildRFArrays(
+      graphData.nodes, graphData.edges, depth, 0
+    )
+    applyRFArrays({ rfNodes, rfEdges })
+  }, [graphData, buildRFArrays, applyRFArrays, setNodes])
 
   // ── Edge click dispatcher (spec 10.87) ────────────────────────────────────
   const onEdgeClick = useCallback((event, edge) => {
@@ -199,14 +269,53 @@ function Canvas({ graphData }) {
   }, [activeTool, nodes, setEdges])
 
   // ── Node click dispatcher ─────────────────────────────────────────────────
-  // 'grow' tool is a future feature (no /expand backend endpoint yet).
-  // The toolbar does not expose it, but keyboard shortcut G can activate it.
-  // Clicking a node while 'grow' is active is intentionally a no-op until
-  // the real expand endpoint is implemented in a later phase.
-  const onNodeClick = useCallback((_event, _node) => {
-    // No action: node card is opened inside NeonLampNode via its own onClick.
-    // 'grow' tool no-op: mockProgressiveApi removed, real endpoint pending.
-  }, [])
+  // default tool: node card opens inside NeonLampNode via its own onClick.
+  // grow tool: reveal the next BFS depth layer.
+  const onNodeClick = useCallback((_event, rfNode) => {
+    if (activeTool !== 'grow') return
+    if (growingNodeId !== null) return   // animation in progress — ignore
+
+    const { nodes: apiNodes, edges: apiEdges, depth: depthMap } = graphRef.current
+    if (!apiNodes.length) return
+
+    // Only allow clicking a node that is in the currently visible set
+    const nodeDepth = depthMap[rfNode.id] ?? 0
+    if (nodeDepth > revealedDepth) return
+
+    // Find the next depth level that actually has nodes
+    const maxAvailableDepth = Math.max(0, ...Object.values(depthMap))
+    const nextDepth = revealedDepth + 1
+    if (nextDepth > maxAvailableDepth) return   // already fully revealed
+
+    // 1. Show grow-pulse animation on the clicked node
+    setGrowingNodeId(rfNode.id)
+    setNodes((prev) =>
+      prev.map((n) =>
+        n.id === rfNode.id ? { ...n, data: { ...n.data, growing: true } } : n
+      )
+    )
+
+    // 2. After pulse plays, reveal the next layer
+    setTimeout(() => {
+      setGrowingNodeId(null)
+      setNodes((prev) =>
+        prev.map((n) =>
+          n.id === rfNode.id ? { ...n, data: { ...n.data, growing: false } } : n
+        )
+      )
+
+      const newRevealedDepth = nextDepth
+      setRevealedDepth(newRevealedDepth)
+
+      const { rfNodes, rfEdges } = buildRFArrays(
+        apiNodes, apiEdges, depthMap, newRevealedDepth
+      )
+      // lamp-mount + cable-draw CSS animations fire automatically on new
+      // React Flow nodes/edges (they're applied via className in NeonLampNode
+      // and EnergyEdge respectively).
+      applyRFArrays({ rfNodes, rfEdges })
+    }, 420)   // matches growPulse duration (1s) with a comfortable lead-in
+  }, [activeTool, revealedDepth, growingNodeId, buildRFArrays, applyRFArrays, setNodes])
 
   // ── Note save handler ─────────────────────────────────────────────────────
   const handleNoteSave = useCallback((edgeId, content) => {

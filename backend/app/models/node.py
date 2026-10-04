@@ -32,6 +32,13 @@ class Node(Base):
     last_expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     # F-5: stores the NT-02 question text so NT-03 can evaluate against the actual question
     last_question: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, server_default="")
+    # F-7A: in-progress scores for the current 3-question quiz session.
+    # Stores a JSON list of raw NT-03 scores accumulated during one session.
+    # Reset to [] at the start of each new session (question_index == 0).
+    # Never read by frontend — backend-only accumulator.
+    quiz_session_scores: Mapped[Any] = mapped_column(
+        JSON, nullable=True, default=list, server_default="[]"
+    )
 
     # Relationships
     session: Mapped["Session"] = relationship(

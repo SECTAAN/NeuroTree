@@ -46,7 +46,7 @@ async function resolveSourceText(source) {
  *   - Cancel confirmation if data exists
  */
 export default function NewTreeDialog({ onClose }) {
-  const { navigateTo, setGraphData } = useApp()
+  const { navigateTo, setGraphData, setActiveSessionId } = useApp()
 
   const [step, setStep]                   = useState(1)
   const [metadata, setMetadata]           = useState(INITIAL_METADATA)
@@ -79,6 +79,10 @@ export default function NewTreeDialog({ onClose }) {
     setActiveStage(0)
     setErrorMsg('')
 
+    // F-6: generate a fresh UUID for each new tree — guarantees independence.
+    // This is the session_id that the backend will use for all nodes/edges.
+    const newSessionId = crypto.randomUUID()
+
     // Advance stages in lock-step with real work
     const advance = (n) => setActiveStage(n)
 
@@ -87,8 +91,11 @@ export default function NewTreeDialog({ onClose }) {
       const text = await resolveSourceText(source)
       advance(1)  // Extracting
 
-      // F-2: pass tree identity so backend can persist it on the Session row
-      const { data } = await graphApi.ingest(text, metadata.treeName, metadata.learningGoal)
+      // F-2: pass tree identity so backend can persist it on the Session row.
+      // F-6: pass newSessionId so the backend creates an independent session.
+      const { data } = await graphApi.ingest(
+        text, metadata.treeName, metadata.learningGoal, newSessionId
+      )
       advance(2)  // Identifying prerequisites
 
       // Fetch the resulting graph
@@ -103,6 +110,11 @@ export default function NewTreeDialog({ onClose }) {
           'Please try with more detailed or structured content.'
         )
       }
+
+      // F-6: activate the new session before setting graph data so the
+      // subsequent fetchGraph() (and all quiz calls) scope to the right tree.
+      const resolvedSessionId = data?.session_id || newSessionId
+      setActiveSessionId(resolvedSessionId)
 
       setGraphData(graphRes.data)
       advance(4)  // Preparing Skill Tree

@@ -480,10 +480,21 @@ def _mock_adaptive_recommendation(
 
 def _mock_evaluate(user_answer: str, previous_mastery: float = 0.0) -> LangFlowEvalOutput:
     """
-    Mock evaluation: accumulates mastery using the progressive formula
-    (previous_mastery + ai_score * 0.4) so mock behavior is consistent.
+    F-7B.2: Mock evaluation returns a raw NT-03 score (0–100), matching the LIVE
+    path contract.  quiz.py accumulates these raw scores and applies
+    SESSION_PROGRESSION_WEIGHT (0.25) via calculate_session_mastery() — calling
+    calculate_progressive_mastery() here would cause double-discounting.
+
+    Score bands (by word count, mirrors NT-03 scoring heuristics):
+      >= 20 words → 75–95  (high)
+       8–19 words → 45–74  (medium)
+        < 8 words → 10–44  (low)
+
+    `previous_mastery` is accepted for signature compatibility with the LIVE
+    evaluate_answer() caller but is intentionally not used here — the baseline
+    is applied by quiz.py's calculate_session_mastery() after all 3 scores are
+    accumulated.
     """
-    from app.services.mastery_service import calculate_progressive_mastery
     word_count = len(user_answer.split())
     if word_count >= 20:
         ai_score = random.randint(75, 95)
@@ -494,9 +505,7 @@ def _mock_evaluate(user_answer: str, previous_mastery: float = 0.0) -> LangFlowE
     else:
         ai_score = random.randint(10, 44)
         feedback = random.choice(_MOCK_FEEDBACK_BY_RANGE["low"])
-    # Mock still uses progressive accumulation so smoke_test unlock logic works
-    accumulated = calculate_progressive_mastery(previous_mastery, ai_score)
-    return LangFlowEvalOutput(score=accumulated, feedback=feedback)
+    return LangFlowEvalOutput(score=float(ai_score), feedback=feedback)
 
 
 async def get_knowledge_gap_pathway(

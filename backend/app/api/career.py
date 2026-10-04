@@ -4,12 +4,14 @@ Career API — /api/v1/career/*
 Endpoints:
   POST /api/v1/career/pathway  — NT-05: knowledge gap analysis + personalized
                                   learning pathway toward a career goal
+
+Session scoping (F-6): uses X-Session-ID (falls back to X-User-ID).
 """
 from fastapi import APIRouter, Depends, status, Request, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session as DbSession
 
-from app.api.dependencies import get_current_user_id
+from app.api.dependencies import get_active_session_id
 from app.db.database import get_db
 from app.models.node import Node
 from app.services import langflow_service
@@ -39,7 +41,7 @@ class CareerPathwayRequest(BaseModel):
 async def get_career_pathway(
     request: Request,                        # required by slowapi
     body: CareerPathwayRequest,
-    session_id: str = Depends(get_current_user_id),
+    session_id: str = Depends(get_active_session_id),
     db: DbSession = Depends(get_db),
 ):
     """

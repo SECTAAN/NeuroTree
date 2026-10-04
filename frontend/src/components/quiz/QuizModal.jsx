@@ -2,38 +2,60 @@ import { useState, useEffect, useRef } from 'react'
 import { quizApi } from '../../services/api'
 
 /**
- * QuizModal — glassmorphism Level-3 modal for answering essay questions.
+ * QuizModal — F-7C: 3-question quiz session.
  *
- * Steps:
- *   loading   → fetching question from backend
- *   question  → user types answer and submits
- *   result    → AI score + mastery bar
- *   error     → generic circuit error
- *   cooldown  → HTTP 429 rate-limit: specific message + timed re-enable button
+ * Session flow (question_index 0 → 1 → 2):
+ *   loading  → fetching first question from backend (question_index resets to 0)
+ *   question → user types answer and submits
+ *   interim  → Q0/Q1 response received (is_final=false):
+ *              show brief per-question feedback, then load next question
+ *   result   → Q2 response received (is_final=true):
+ *              show committed mastery + unlock result
+ *   error    → generic circuit error
+ *   cooldown → HTTP 429 rate-limit: specific message + timed re-enable button
+ *
+ * Rules:
+ *   - onMasteryUpdate is called ONLY when is_final=true (after Q2).
+ *   - Mastery bar and lamp are NOT updated on Q0/Q1 responses.
+ *   - Closing the modal before Q2 leaves quiz_session_scores intact on the
+ *     backend; the next open always sends question_index=0 which resets them.
+ *   - Duplicate submission is blocked while `submitting` is true.
  */
+
+const TOTAL_QUESTIONS = 3
+
 export default function QuizModal({ node, onClose, onMasteryUpdate }) {
-  // step: 'loading' | 'question' | 'result' | 'error' | 'cooldown'
-  const [step, setStep]           = useState('loading')
-  const [question, setQuestion]   = useState('')
-  const [answer, setAnswer]       = useState('')
-  const [result, setResult]       = useState(null)
+  // ── Session state ──────────────────────────────────────────────────────────
+  // questionIndex: which question we are currently answering (0 | 1 | 2).
+  // Always starts at 0 when the modal mounts or restarts.
+  const [questionIndex, setQuestionIndex] = useState(0)
+
+  // step: 'loading' | 'question' | 'interim' | 'result' | 'error' | 'cooldown'
+  const [step, setStep]             = useState('loading')
+  const [question, setQuestion]     = useState('')
+  const [answer, setAnswer]         = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [errMsg, setErrMsg]       = useState('')
+  const [errMsg, setErrMsg]         = useState('')
 
-  // Cooldown timer (seconds remaining until retry button re-enables)
-  const [cooldown, setCooldown]   = useState(0)
-  const timerRef                  = useRef(null)
+  // interimData: { ai_score, feedback } — displayed while loading next question
+  const [interimData, setInterimData]   = useState(null)
+  // finalResult: full Q2 response — mastery committed
+  const [finalResult, setFinalResult]   = useState(null)
 
-  // ── Start / clear countdown ───────────────────────────────────────────────
+  // Cooldown timer
+  const [cooldown, setCooldown] = useState(0)
+  const timerRef                = useRef(null)
+
+  // Guard: prevent double-fire of onMasteryUpdate if re-render races
+  const masteryFiredRef = useRef(false)
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
   function startCooldown(seconds) {
     setCooldown(seconds)
     clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
       setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current)
-          return 0
-        }
+        if (prev <= 1) { clearInterval(timerRef.current); return 0 }
         return prev - 1
       })
     }, 1000)
@@ -41,57 +63,11 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
 
   useEffect(() => () => clearInterval(timerRef.current), [])
 
-  // ── Load question on mount ────────────────────────────────────────────────
-  useEffect(() => {
-    const nodeId = node?.id
-    console.log('[QuizModal] Payload quiz node_id:', nodeId, '| full node data:', node)
-    if (!nodeId) {
-      setErrMsg(`node_id is undefined. Received node: ${JSON.stringify(node)}`)
-      setStep('error')
-      return
-    }
-    quizApi.generate(nodeId)
-      .then(({ data }) => { setQuestion(data.question); setStep('question') })
-      .catch((e) => {
-        if (e.isRateLimit) {
-          startCooldown(e.retryAfter ?? 30)
-          setStep('cooldown')
-        } else {
-          setErrMsg(e.message)
-          setStep('error')
-        }
-      })
-  }, [node?.id])
-
-  // ── Submit answer ─────────────────────────────────────────────────────────
-  async function handleSubmit() {
-    if (!answer.trim() || submitting) return
-    setSubmitting(true)
-    const nodeId = node?.id
-    console.log('[QuizModal] Payload evaluate node_id:', nodeId, '| answer:', answer.trim().slice(0, 40))
-    try {
-      const { data } = await quizApi.evaluate(nodeId, answer.trim())
-      setResult(data)
-      onMasteryUpdate(nodeId, data.new_mastery_score, data.unlocked_new_nodes ?? [])
-      setStep('result')
-    } catch (e) {
-      if (e.isRateLimit) {
-        startCooldown(e.retryAfter ?? 30)
-        setStep('cooldown')
-      } else {
-        setErrMsg(e.message)
-        setStep('error')
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // Retry from cooldown — go back to loading (re-fetch question)
-  function handleRetryAfterCooldown() {
-    if (cooldown > 0) return
+  // ── Load a question from the backend ──────────────────────────────────────
+  // Called on mount (for Q0) and after each interim result (for Q1, Q2).
+  function loadQuestion(nodeId) {
     setStep('loading')
-    const nodeId = node?.id
+    setAnswer('')
     quizApi.generate(nodeId)
       .then(({ data }) => { setQuestion(data.question); setStep('question') })
       .catch((e) => {
@@ -100,12 +76,114 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
       })
   }
 
-  const masteryColor =
-    result?.new_mastery_score >= 70 ? '#00FFA3' :
-    result?.new_mastery_score >= 60 ? '#00F3FF' :
-    result?.new_mastery_score >= 40 ? '#4D7CFE' :
-                                      'rgba(255,255,255,0.4)'
+  // ── Mount: always start fresh at Q0 ───────────────────────────────────────
+  useEffect(() => {
+    const nodeId = node?.id
+    console.log('[QuizModal] Starting session for node_id:', nodeId)
+    if (!nodeId) {
+      setErrMsg(`node_id is undefined. Received node: ${JSON.stringify(node)}`)
+      setStep('error')
+      return
+    }
+    // Reset full session state (handles re-open after early close)
+    setQuestionIndex(0)
+    setInterimData(null)
+    setFinalResult(null)
+    masteryFiredRef.current = false
+    loadQuestion(nodeId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.id])
 
+  // ── Submit answer ──────────────────────────────────────────────────────────
+  async function handleSubmit() {
+    if (!answer.trim() || submitting) return
+    setSubmitting(true)
+    const nodeId = node?.id
+    const qi     = questionIndex
+    console.log('[QuizModal] evaluate node_id:', nodeId, '| qi:', qi, '| answer:', answer.trim().slice(0, 40))
+    try {
+      const { data } = await quizApi.evaluate(nodeId, answer.trim(), qi)
+
+      if (data.is_final) {
+        // ── Q2: session complete — show committed mastery ────────────────
+        setFinalResult(data)
+        setStep('result')
+        if (!masteryFiredRef.current) {
+          masteryFiredRef.current = true
+          onMasteryUpdate(nodeId, data.new_mastery_score, data.unlocked_new_nodes ?? [])
+        }
+      } else {
+        // ── Q0 / Q1: show interim feedback, then load next question ──────
+        setInterimData({ ai_score: data.ai_score, feedback: data.feedback })
+        setQuestionIndex(qi + 1)
+        setStep('interim')
+      }
+    } catch (e) {
+      if (e.isRateLimit) { startCooldown(e.retryAfter ?? 30); setStep('cooldown') }
+      else               { setErrMsg(e.message); setStep('error') }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // ── Advance from interim → next question ───────────────────────────────────
+  function handleNextQuestion() {
+    const nodeId = node?.id
+    setInterimData(null)
+    loadQuestion(nodeId)
+  }
+
+  // ── Retry from cooldown ────────────────────────────────────────────────────
+  function handleRetryAfterCooldown() {
+    if (cooldown > 0) return
+    loadQuestion(node?.id)
+  }
+
+  // ── Derived display values ─────────────────────────────────────────────────
+  // Progress label uses the index of the question being answered (1-based).
+  // During 'interim' we have just submitted questionIndex-1 (already incremented).
+  const displayQuestionNumber =
+    step === 'interim' ? questionIndex      // already incremented post-submit
+    : step === 'result' ? TOTAL_QUESTIONS   // session complete
+    : questionIndex + 1                     // currently answering
+
+  const masteryColor =
+    finalResult?.new_mastery_score >= 70 ? '#00FFA3' :
+    finalResult?.new_mastery_score >   0 ? '#00F3FF' :
+                                           'rgba(255,255,255,0.4)'
+
+  // Per-question feedback color (interim — not final mastery)
+  const interimScoreColor =
+    (interimData?.ai_score ?? 0) >= 70 ? '#00FFA3' :
+    (interimData?.ai_score ?? 0) >  0  ? '#00F3FF' :
+                                         'rgba(255,255,255,0.4)'
+
+  // ── Progress bar (3 segments) ──────────────────────────────────────────────
+  function ProgressDots() {
+    return (
+      <div className="flex items-center gap-1.5 mb-4">
+        {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => {
+          // A segment is 'done' if we are past it; 'active' if current; 'pending' otherwise
+          const isDone   = i < (step === 'result' ? TOTAL_QUESTIONS : questionIndex)
+          const isActive = i === questionIndex && step !== 'result' && step !== 'interim'
+          return (
+            <div
+              key={i}
+              className="h-1 flex-1 rounded-full transition-all duration-500"
+              style={{
+                background: isDone   ? '#00FFA3'
+                          : isActive ? 'rgba(0,243,255,0.7)'
+                          :            'rgba(255,255,255,0.1)',
+                boxShadow: isActive ? '0 0 6px rgba(0,243,255,0.4)' : undefined,
+              }}
+            />
+          )
+        })}
+      </div>
+    )
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -123,10 +201,20 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
           ✕
         </button>
 
-        {/* Node label */}
-        <p className="text-xs text-white/35 tracking-widest uppercase mb-1">Quiz · {node.label}</p>
+        {/* Node label + session progress counter */}
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-xs text-white/35 tracking-widest uppercase">Quiz · {node.label}</p>
+          {step !== 'error' && step !== 'cooldown' && (
+            <p className="text-xs text-white/30 font-mono">
+              {displayQuestionNumber}/{TOTAL_QUESTIONS}
+            </p>
+          )}
+        </div>
 
-        {/* ── Loading ─────────────────────────────────────────────────── */}
+        {/* Progress segments (hidden on error/cooldown) */}
+        {step !== 'error' && step !== 'cooldown' && <ProgressDots />}
+
+        {/* ── Loading ───────────────────────────────────────────────────── */}
         {step === 'loading' && (
           <div className="py-10 text-center">
             <div className="text-2xl mb-3 animate-pulse">⚡</div>
@@ -134,10 +222,10 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
           </div>
         )}
 
-        {/* ── Question ────────────────────────────────────────────────── */}
+        {/* ── Question ──────────────────────────────────────────────────── */}
         {step === 'question' && (
           <>
-            <h2 className="text-base font-medium text-white/90 mt-3 mb-6 leading-relaxed">
+            <h2 className="text-base font-medium text-white/90 mt-2 mb-6 leading-relaxed">
               {question}
             </h2>
             <textarea
@@ -167,40 +255,88 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
           </>
         )}
 
-        {/* ── Result ──────────────────────────────────────────────────── */}
-        {step === 'result' && result && (
+        {/* ── Interim (Q0 / Q1 feedback — mastery NOT yet committed) ────── */}
+        {step === 'interim' && interimData && (
           <>
-            <div className="mt-3 mb-5 flex items-center gap-3">
+            {/* Per-question score badge */}
+            <div className="mt-2 mb-4 flex items-center gap-3">
               <div
                 className="text-2xl font-bold font-mono"
-                style={{ color: masteryColor, textShadow: `0 0 12px ${masteryColor}66` }}
+                style={{ color: interimScoreColor, textShadow: `0 0 12px ${interimScoreColor}66` }}
               >
-                {result.ai_score}
+                {interimData.ai_score}
               </div>
               <div>
-                <p className="text-xs text-white/35">AI Score</p>
-                <p className="text-sm font-medium" style={{ color: masteryColor }}>
-                  {result.mastery_level}
+                <p className="text-xs text-white/35">Score · Question {questionIndex - 1 + 1}</p>
+                <p className="text-xs text-white/50">
+                  {questionIndex} of {TOTAL_QUESTIONS} answered
                 </p>
               </div>
             </div>
 
-            {/* Feedback */}
+            {/* Brief feedback */}
             <div className="glass-1 rounded-2xl p-4 mb-5">
-              <p className="text-sm text-white/75 leading-relaxed">{result.feedback}</p>
+              <p className="text-sm text-white/75 leading-relaxed">{interimData.feedback}</p>
             </div>
 
-            {/* New mastery bar */}
+            {/* Note: mastery not updated until all 3 questions are answered */}
+            <p className="text-xs text-white/25 text-center mb-5">
+              Mastery updates after all {TOTAL_QUESTIONS} questions — keep going!
+            </p>
+
+            <button
+              onClick={handleNextQuestion}
+              className="w-full btn-liquid py-3 text-sm font-medium"
+              style={{
+                borderColor: 'rgba(0,243,255,0.4)',
+                boxShadow:   '0 0 14px rgba(0,243,255,0.15)',
+              }}
+            >
+              Next Question →
+            </button>
+          </>
+        )}
+
+        {/* ── Final Result (Q2 — mastery committed) ─────────────────────── */}
+        {step === 'result' && finalResult && (
+          <>
+            {/* Session complete label */}
+            <p className="text-xs text-white/40 tracking-widest uppercase mb-3 mt-1">
+              Session Complete
+            </p>
+
+            {/* Last question's raw score */}
+            <div className="mb-4 flex items-center gap-3">
+              <div
+                className="text-2xl font-bold font-mono"
+                style={{ color: masteryColor, textShadow: `0 0 12px ${masteryColor}66` }}
+              >
+                {finalResult.ai_score}
+              </div>
+              <div>
+                <p className="text-xs text-white/35">Final Score</p>
+                <p className="text-sm font-medium" style={{ color: masteryColor }}>
+                  {finalResult.mastery_level}
+                </p>
+              </div>
+            </div>
+
+            {/* Last question's feedback */}
+            <div className="glass-1 rounded-2xl p-4 mb-5">
+              <p className="text-sm text-white/75 leading-relaxed">{finalResult.feedback}</p>
+            </div>
+
+            {/* Committed mastery bar */}
             <div className="mb-5">
               <div className="flex justify-between text-xs text-white/40 mb-1.5">
                 <span>New Mastery</span>
-                <span style={{ color: masteryColor }}>{result.new_mastery_score.toFixed(1)}%</span>
+                <span style={{ color: masteryColor }}>{finalResult.new_mastery_score.toFixed(1)}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{
-                    width: `${result.new_mastery_score}%`,
+                    width: `${finalResult.new_mastery_score}%`,
                     background: `linear-gradient(90deg, ${masteryColor}, rgba(77,124,254,0.5))`,
                     boxShadow: `0 0 8px ${masteryColor}55`,
                   }}
@@ -209,7 +345,7 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
             </div>
 
             {/* Unlocked nodes notification */}
-            {result.unlocked_new_nodes?.length > 0 && (
+            {finalResult.unlocked_new_nodes?.length > 0 && (
               <div
                 className="rounded-2xl p-3 mb-5 text-xs flex items-center gap-2"
                 style={{
@@ -218,7 +354,7 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
                   color: '#00F3FF',
                 }}
               >
-                ⚡ {result.unlocked_new_nodes.length} new node{result.unlocked_new_nodes.length > 1 ? 's' : ''} unlocked!
+                ⚡ {finalResult.unlocked_new_nodes.length} new node{finalResult.unlocked_new_nodes.length > 1 ? 's' : ''} unlocked!
               </div>
             )}
 
@@ -228,24 +364,15 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
           </>
         )}
 
-        {/* ── Cooldown (HTTP 429) ──────────────────────────────────────── */}
+        {/* ── Cooldown (HTTP 429) ────────────────────────────────────────── */}
         {step === 'cooldown' && (
           <div className="py-8 text-center">
-            {/* Animated cooldown ring */}
             <div className="relative w-16 h-16 mx-auto mb-5">
               <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                <circle
-                  cx="32" cy="32" r="26"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="32" cy="32" r="26"
-                  fill="none"
-                  stroke="rgba(0,243,255,0.5)"
-                  strokeWidth="4"
-                  strokeLinecap="round"
+                <circle cx="32" cy="32" r="26" fill="none"
+                  stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+                <circle cx="32" cy="32" r="26" fill="none"
+                  stroke="rgba(0,243,255,0.5)" strokeWidth="4" strokeLinecap="round"
                   strokeDasharray={`${2 * Math.PI * 26}`}
                   strokeDashoffset={`${2 * Math.PI * 26 * (cooldown / 30)}`}
                   style={{ transition: 'stroke-dashoffset 1s linear' }}
@@ -258,18 +385,12 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
                 {cooldown > 0 ? `${cooldown}s` : '✓'}
               </span>
             </div>
-
-            <p
-              className="text-sm font-medium mb-2"
-              style={{ color: 'rgba(0,243,255,0.8)' }}
-            >
+            <p className="text-sm font-medium mb-2" style={{ color: 'rgba(0,243,255,0.8)' }}>
               Sirkuit AI sedang cooldown
             </p>
             <p className="text-xs text-white/35 mb-6 leading-relaxed max-w-xs mx-auto">
               Terlalu banyak permintaan. Harap tunggu beberapa saat sebelum mencoba lagi.
             </p>
-
-            {/* Retry button — disabled while countdown is running */}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={handleRetryAfterCooldown}
@@ -292,7 +413,7 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
           </div>
         )}
 
-        {/* ── Generic Error ────────────────────────────────────────────── */}
+        {/* ── Generic Error ──────────────────────────────────────────────── */}
         {step === 'error' && (
           <div className="py-8 text-center">
             <p className="text-white/50 text-sm mb-2">Sirkuit AI terputus</p>
@@ -300,6 +421,7 @@ export default function QuizModal({ node, onClose, onMasteryUpdate }) {
             <button onClick={onClose} className="btn-liquid px-6 py-2 text-sm">Close</button>
           </div>
         )}
+
       </div>
     </div>
   )

@@ -54,12 +54,6 @@ export default function LandingPage() {
   useEffect(() => { if (title.done) setShowSub(true) }, [title.done])
   useEffect(() => { if (sub.done)   setTimeout(() => setShowBtn(true), 300) }, [sub.done])
 
-  // Auto-advance after 5 s if user doesn't click
-  useEffect(() => {
-    const t = setTimeout(() => handleEnter(), 6000)
-    return () => clearTimeout(t)
-  }, [])
-
   function handleEnter() {
     if (exiting) return
     setExiting(true)

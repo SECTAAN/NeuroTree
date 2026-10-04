@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { SESSION_ID, graphApi } from '../services/api'
+import { USER_ID, activeSession, graphApi } from '../services/api'
 
 const AppContext = createContext(null)
 
-// ── sessionStorage key for page persistence (P0-2) ────────────────────────────
-const PAGE_KEY = 'neurotree-page'
+// ── sessionStorage keys ───────────────────────────────────────────────────────
+const PAGE_KEY    = 'neurotree-page'
+const SESSION_KEY = 'neurotree-active-session'  // F-6: persist active tree UUID
 
 // Pages that are safe to restore on refresh (skip 'landing' — first load
 // should always show the landing screen for new tabs/sessions).
@@ -27,12 +28,50 @@ function persistPage(page) {
   }
 }
 
+// ── Active session persistence (F-6) ─────────────────────────────────────────
+function readPersistedSessionId() {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) || null
+  } catch {
+    return null
+  }
+}
+
+function persistSessionId(id) {
+  try {
+    if (id) {
+      sessionStorage.setItem(SESSION_KEY, id)
+    } else {
+      sessionStorage.removeItem(SESSION_KEY)
+    }
+  } catch {
+    // silent
+  }
+}
+
 export function AppProvider({ children }) {
   // ── Navigation state (replaces React Router for simplicity) ───────────────
   // page: 'landing' | 'dashboard' | 'skilltree' | 'careermap'
   // Initialise from sessionStorage so refresh restores the correct page.
   const [page, setPage]           = useState(() => readPersistedPage())
   const [activeTreeId, setActiveTreeId] = useState(null)
+
+  // ── F-6: Active session (per-tree UUID) ────────────────────────────────────
+  // Persisted in sessionStorage so refresh within the same tab restores it.
+  // Also kept in sync with activeSession.id (the mutable ref in api.js) so
+  // every Axios request automatically sends the correct X-Session-ID header.
+  const [activeSessionId, _setActiveSessionId] = useState(() => {
+    const persisted = readPersistedSessionId()
+    // Sync the api.js ref immediately at initialisation time
+    activeSession.id = persisted
+    return persisted
+  })
+
+  const setActiveSessionId = useCallback((id) => {
+    _setActiveSessionId(id)
+    activeSession.id = id   // keep Axios interceptor in sync
+    persistSessionId(id)
+  }, [])
 
   // ── Graph data ─────────────────────────────────────────────────────────────
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] })
@@ -60,15 +99,19 @@ export function AppProvider({ children }) {
 
   // ── P0-2: Restore treeName/learningGoal after a refresh to 'skilltree' ─────
   // On mount, if we restored to 'skilltree' but treeName is empty, pull it
-  // from GET /api/v1/sessions (same fallback already in SkillTree.jsx for F-2).
+  // from GET /api/v1/sessions matching the restored activeSessionId.
   // This runs once on mount and is a no-op when treeName is already populated.
   useEffect(() => {
     if (page !== 'skilltree' || treeName) return
     graphApi.fetchSessions()
       .then(({ data }) => {
-        const first = data?.sessions?.[0]
-        if (first?.tree_name)    setTreeName(first.tree_name)
-        if (first?.learning_goal) setLearningGoal(first.learning_goal)
+        // Find the session matching activeSessionId (if set), else take first
+        const sid = activeSession.id
+        const match = sid
+          ? (data?.sessions ?? []).find((s) => s.session_id === sid)
+          : data?.sessions?.[0]
+        if (match?.tree_name)    setTreeName(match.tree_name)
+        if (match?.learning_goal) setLearningGoal(match.learning_goal)
       })
       .catch(() => { /* silent — header will show blank, non-blocking */ })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -129,7 +172,10 @@ export function AppProvider({ children }) {
       selectedNode, setSelectedNode,
       quizOpen, quizNode, openQuiz, closeQuiz,
       updateNodeMastery,
-      sessionId: SESSION_ID,
+      // F-6 multi-session
+      activeSessionId, setActiveSessionId,
+      // Legacy compat — consumers that used sessionId: SESSION_ID still work
+      sessionId: USER_ID,
     }}>
       {children}
     </AppContext.Provider>
