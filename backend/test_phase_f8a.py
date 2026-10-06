@@ -1,17 +1,20 @@
 """
-F-8A Tests — Backend Ingest Limit Raise + Rate Limit Split.
+F-8A / F-8E.1 Tests — Backend Ingest Limit + Rate Limit Split.
 
 Tests:
-  1.  INGEST_MAX_CHARS constant is 12 000
+  1.  INGEST_MAX_CHARS constant is 30 000  (F-8E.1: was 12 000)
   2.  RATE_LIMIT_EXTRACT constant is set and != RATE_LIMIT_INGEST
   3.  RATE_LIMIT_INGEST is still "3/minute"
   4.  IngestRequest accepts 5 000-char source_text (backward compat)
-  5.  IngestRequest accepts 12 000-char source_text (new limit)
-  6.  IngestRequest rejects 12 001-char source_text
-  7.  IngestRequest rejects text shorter than 10 chars
-  8.  extract.py MAX_CHARS is still 5 000 (per-file cap unchanged)
-  9.  /extract endpoint uses RATE_LIMIT_EXTRACT (not RATE_LIMIT_INGEST)
-  10. settings.INGEST_MAX_CHARS is readable from config
+  5.  IngestRequest accepts 12 000-char source_text (mid-range, still valid)
+  6.  IngestRequest accepts 25 000-char source_text (typical 5-file payload)
+  7.  IngestRequest accepts 30 000-char source_text (at new limit)
+  8.  IngestRequest rejects 30 001-char source_text
+  9.  IngestRequest rejects text shorter than 10 chars
+  10. extract.py MAX_CHARS is still 5 000 (per-file cap unchanged)
+  11. extract.MAX_CHARS < INGEST_MAX_CHARS (intentional divergence)
+  12. /extract endpoint uses RATE_LIMIT_EXTRACT (not RATE_LIMIT_INGEST)
+  13. settings.INGEST_MAX_CHARS is readable from config
 """
 import sys
 import os
@@ -36,8 +39,8 @@ def record(name, ok, detail=""):
 # ── Test 1: INGEST_MAX_CHARS constant ─────────────────────────────────────────
 print("\n-- Test 1: INGEST_MAX_CHARS in settings ---------------------------")
 settings = get_settings()
-record("settings.INGEST_MAX_CHARS == 12000",
-       settings.INGEST_MAX_CHARS == 12_000,
+record("settings.INGEST_MAX_CHARS == 30000  (F-8E.1)",
+       settings.INGEST_MAX_CHARS == 30_000,
        f"value={settings.INGEST_MAX_CHARS}")
 
 
@@ -54,33 +57,47 @@ record("RATE_LIMIT_INGEST still '3/minute'",
        f"value={settings.RATE_LIMIT_INGEST!r}")
 
 
-# ── Tests 4–7: IngestRequest validation ───────────────────────────────────────
-print("\n-- Tests 4–7: IngestRequest validation ----------------------------")
+# ── Tests 4–9: IngestRequest validation ───────────────────────────────────────
+print("\n-- Tests 4-9: IngestRequest validation ----------------------------")
 from app.schemas.request_schema import IngestRequest, _INGEST_MAX_CHARS
 from pydantic import ValidationError as PydanticValidationError
 
-# 4: 5 000-char input still accepted (backward compat)
+# 4: 5 000-char input still accepted (backward compat — single PDF)
 try:
     IngestRequest(source_text="a" * 5_000)
     record("IngestRequest accepts 5000-char text (backward compat)", True)
 except PydanticValidationError as e:
     record("IngestRequest accepts 5000-char text (backward compat)", False, str(e)[:80])
 
-# 5: 12 000-char input now accepted
+# 5: 12 000-char input still accepted (old limit, mid-range for new limit)
 try:
     IngestRequest(source_text="a" * 12_000)
-    record("IngestRequest accepts 12000-char text", True)
+    record("IngestRequest accepts 12000-char text (mid-range)", True)
 except PydanticValidationError as e:
-    record("IngestRequest accepts 12000-char text", False, str(e)[:80])
+    record("IngestRequest accepts 12000-char text (mid-range)", False, str(e)[:80])
 
-# 6: 12 001-char input rejected
+# 6: 25 000-char input accepted (typical 5-file payload: 5 × 5 000 chars)
 try:
-    IngestRequest(source_text="a" * 12_001)
-    record("IngestRequest rejects 12001-char text", False, "should have raised")
-except PydanticValidationError:
-    record("IngestRequest rejects 12001-char text", True)
+    IngestRequest(source_text="a" * 25_000)
+    record("IngestRequest accepts 25000-char text (5-file typical payload)", True)
+except PydanticValidationError as e:
+    record("IngestRequest accepts 25000-char text (5-file typical payload)", False, str(e)[:80])
 
-# 7: too-short input rejected
+# 7: 30 000-char input accepted (at the new ceiling)
+try:
+    IngestRequest(source_text="a" * 30_000)
+    record("IngestRequest accepts 30000-char text (at new limit)", True)
+except PydanticValidationError as e:
+    record("IngestRequest accepts 30000-char text (at new limit)", False, str(e)[:80])
+
+# 8: 30 001-char input rejected (over the new ceiling)
+try:
+    IngestRequest(source_text="a" * 30_001)
+    record("IngestRequest rejects 30001-char text", False, "should have raised")
+except PydanticValidationError:
+    record("IngestRequest rejects 30001-char text", True)
+
+# 9: too-short input rejected
 try:
     IngestRequest(source_text="short")
     record("IngestRequest rejects text < 10 chars", False, "should have raised")
@@ -88,8 +105,8 @@ except PydanticValidationError:
     record("IngestRequest rejects text < 10 chars", True)
 
 
-# ── Test 8: extract.py MAX_CHARS unchanged ────────────────────────────────────
-print("\n-- Test 8: extract.py MAX_CHARS unchanged -------------------------")
+# ── Tests 10+11: extract.py MAX_CHARS unchanged ───────────────────────────────
+print("\n-- Tests 10+11: extract.py MAX_CHARS unchanged --------------------")
 from app.api.extract import MAX_CHARS
 record("extract.MAX_CHARS still 5000 (per-file cap)",
        MAX_CHARS == 5_000,
@@ -99,8 +116,8 @@ record("extract.MAX_CHARS < INGEST_MAX_CHARS (intentional divergence)",
        f"extract={MAX_CHARS} ingest={_INGEST_MAX_CHARS}")
 
 
-# ── Test 9: /extract endpoint uses RATE_LIMIT_EXTRACT ─────────────────────────
-print("\n-- Test 9: /extract uses its own rate limit -----------------------")
+# ── Test 12: /extract endpoint uses RATE_LIMIT_EXTRACT ────────────────────────
+print("\n-- Test 12: /extract uses its own rate limit ----------------------")
 # Introspect the decorator chain on the extract_document view function.
 # slowapi stores the limit string in a _rate_limit attribute list.
 try:
@@ -122,8 +139,8 @@ except Exception as e:
     record("/extract endpoint rate limit introspection", False, str(e)[:80])
 
 
-# ── Test 10: settings.INGEST_MAX_CHARS is readable ────────────────────────────
-print("\n-- Test 10: settings.INGEST_MAX_CHARS readable --------------------")
+# ── Test 13: settings.INGEST_MAX_CHARS is readable ────────────────────────────
+print("\n-- Test 13: settings.INGEST_MAX_CHARS readable --------------------")
 try:
     from app.core.config import get_settings as _gs
     s = _gs()
@@ -148,7 +165,7 @@ print()
 passed = sum(1 for r in results if r[0] == PASS)
 failed = sum(1 for r in results if r[0] == FAIL)
 total  = len(results)
-print(f"F-8A Tests: {passed}/{total} passed", "***" if failed == 0 else "!!!")
+print(f"F-8A/F-8E.1 Tests: {passed}/{total} passed", "***" if failed == 0 else "!!!")
 if failed:
     print("\nFailed tests:")
     for r in results:

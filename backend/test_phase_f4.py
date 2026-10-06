@@ -237,44 +237,51 @@ record("unsupported ext: .png is not in SUPPORTED_EXTS",
        _file_extension("photo.png") not in {".pdf", ".docx"})
 
 
-# ── Test 8: MAX_CHARS (extract) vs IngestRequest.max_length (F-8A divergence) ─
-# F-8A intentionally raised IngestRequest.max_length to 12 000 while keeping
-# MAX_CHARS (the per-file extraction cap) at 5 000.  These are now separate
-# concerns: MAX_CHARS caps each individual file; IngestRequest.max_length caps
-# the combined payload after multi-source concatenation.
-print("\n-- Test 8: MAX_CHARS (extract) vs IngestRequest (F-8A) ----------")
+# ── Test 8: MAX_CHARS (extract) vs IngestRequest.max_length ──────────────────
+# F-8A raised IngestRequest.max_length from 5 000 to 12 000.
+# F-8E.1 raised it further to 30 000 to support 5 files × 5 000 chars.
+# MAX_CHARS (the per-file extraction cap) remains 5 000 intentionally.
+print("\n-- Test 8: MAX_CHARS (extract) vs IngestRequest (F-8E.1) --------")
 from app.schemas.request_schema import IngestRequest, _INGEST_MAX_CHARS
 from pydantic import ValidationError as PydanticValidationError
 
 record("MAX_CHARS (extract per-file cap) == 5000", MAX_CHARS == 5_000, f"MAX_CHARS={MAX_CHARS}")
-record("INGEST_MAX_CHARS == 12000", _INGEST_MAX_CHARS == 12_000, f"_INGEST_MAX_CHARS={_INGEST_MAX_CHARS}")
+record("INGEST_MAX_CHARS == 30000", _INGEST_MAX_CHARS == 30_000, f"_INGEST_MAX_CHARS={_INGEST_MAX_CHARS}")
 record("IngestRequest limit > MAX_CHARS (intentional divergence)",
        _INGEST_MAX_CHARS > MAX_CHARS,
        f"ingest={_INGEST_MAX_CHARS} extract={MAX_CHARS}")
 
-# 5 000 chars must still be accepted by IngestRequest (backward compat)
-ok_text_5k = "a" * MAX_CHARS
+# 5 000 chars must still be accepted (backward compat)
+ok_text_5k = "a" * 5_000
 try:
     IngestRequest(source_text=ok_text_5k)
     record("IngestRequest accepts 5000-char text", True)
 except PydanticValidationError as e:
     record("IngestRequest accepts 5000-char text", False, str(e)[:80])
 
-# 12 000 chars must now be accepted (new limit)
-ok_text_12k = "a" * _INGEST_MAX_CHARS
+# 12 000 chars must still be accepted (mid-range)
+ok_text_12k = "a" * 12_000
 try:
     IngestRequest(source_text=ok_text_12k)
     record("IngestRequest accepts 12000-char text", True)
 except PydanticValidationError as e:
     record("IngestRequest accepts 12000-char text", False, str(e)[:80])
 
-# 12 001 chars must be rejected
+# 30 000 chars must be accepted (new limit)
+ok_text_30k = "a" * _INGEST_MAX_CHARS
+try:
+    IngestRequest(source_text=ok_text_30k)
+    record("IngestRequest accepts 30000-char text", True)
+except PydanticValidationError as e:
+    record("IngestRequest accepts 30000-char text", False, str(e)[:80])
+
+# 30 001 chars must be rejected
 too_long = "a" * (_INGEST_MAX_CHARS + 1)
 try:
     IngestRequest(source_text=too_long)
-    record("IngestRequest rejects 12001-char text", False, "should have raised")
+    record("IngestRequest rejects 30001-char text", False, "should have raised")
 except PydanticValidationError:
-    record("IngestRequest rejects 12001-char text", True)
+    record("IngestRequest rejects 30001-char text", True)
 
 
 # ── Test 13: F-2 regression ───────────────────────────────────────────────────

@@ -14,7 +14,7 @@ class IngestRequest(BaseModel):
     source_text: str = Field(
         ...,
         min_length=10,
-        max_length=_INGEST_MAX_CHARS,   # F-8A: 12 000 (was 5 000)
+        max_length=_INGEST_MAX_CHARS,   # F-8E.1: 30 000 (F-8A was 12 000, was 5 000)
         description="Isi dokumen/buku teks yang akan diproses AI.",
     )
     # F-2: optional tree identity — persisted to Session row

@@ -65,8 +65,8 @@ export default function KnowledgeSourceTabs({ source, onChange }) {
         )}
         {activeTab === 'document' && (
           <DocumentUploader
-            file={source.file}
-            onFile={(file) => onChange({ sourceType: 'document', file })}
+            files={source.files}
+            onFiles={(files) => onChange({ sourceType: 'document', files })}
           />
         )}
         {activeTab === 'camera' && (

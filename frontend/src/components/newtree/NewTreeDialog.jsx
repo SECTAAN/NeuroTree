@@ -8,24 +8,28 @@ import AIProcessingState         from './AIProcessingState'
 import GenerationError           from './GenerationError'
 
 const INITIAL_METADATA = { treeName: '', learningGoal: '' }
-const INITIAL_SOURCE   = { sourceType: 'text', text: '', file: null, images: [] }
+const INITIAL_SOURCE   = { sourceType: 'text', text: '', files: [], images: [] }
 
 // ── Source validation ────────────────────────────────────────────────────────
 function isSourceValid(source) {
   if (source.sourceType === 'text')     return source.text.trim().length > 0
-  if (source.sourceType === 'document') return source.file !== null
+  if (source.sourceType === 'document') return source.files.length > 0
   if (source.sourceType === 'image')    return source.images.length > 0
   return false
 }
 
 // ── Extract plain text from source for backend ───────────────────────────────
 // F-4: PDF/DOCX files are sent to POST /api/v1/material/extract which returns
-// the real plain text (capped at 5 000 chars).
+// the real plain text (capped at 5 000 chars per file).
 // P0-3: Camera images are processed with Tesseract.js (client-side OCR).
 //   - Dynamic import so WASM is loaded only when the camera path is used.
 //   - Worker is always terminated, even on error.
-//   - Output is joined and capped at 5 000 chars to match IngestRequest.max_length.
-const OCR_MAX_CHARS = 5_000
+//   - Output is joined and capped at 5 000 chars to match the per-file cap.
+// F-8D: Multiple files are combined before /ingest; the combined payload is
+//   capped at INGEST_MAX_CHARS — mirrors backend IngestRequest.max_length.
+// F-8E.1: raised from 12 000 to 30 000 (matches backend config.py INGEST_MAX_CHARS).
+const OCR_MAX_CHARS    = 5_000
+const INGEST_MAX_CHARS = 30_000   // must stay in sync with backend config.py
 
 // ── OCR image preprocessing ──────────────────────────────────────────────────
 // Improves Tesseract accuracy on real camera photos (blur, shadow, low contrast).
@@ -82,11 +86,101 @@ async function preprocessImageForOCR(imageFile) {
   return canvas
 }
 
+// F-8D: module-level variable used to pass a partial-failure warning from
+// resolveSourceText() to handleGenerate() without changing their signatures.
+// Reset to '' at the start of every handleGenerate() call.
+let _pendingPartialWarning = ''
+
+/**
+ * ExtractionResult — per-file result from the /extract API.
+ * @typedef {{ file: File, filename: string, text: string, ok: boolean, error?: string }} ExtractionResult
+ */
+
+/**
+ * extractAllFiles — F-8C: extract every file in source.files[] in parallel.
+ *
+ * Uses Promise.allSettled so a single failing file does not abort the others.
+ * File order is preserved (allSettled returns results in input order).
+ * Returns an array of ExtractionResult; callers decide how to combine / handle failures.
+ */
+async function extractAllFiles(files) {
+  const settled = await Promise.allSettled(
+    files.map((file) => graphApi.extractFile(file))
+  )
+
+  return settled.map((outcome, idx) => {
+    const file = files[idx]
+    if (outcome.status === 'fulfilled') {
+      return {
+        file,
+        filename: file.name,
+        text: outcome.value.data.extracted_text,
+        ok: true,
+      }
+    }
+    return {
+      file,
+      filename: file.name,
+      text: '',
+      ok: false,
+      error: outcome.reason?.message ?? 'Extraction failed',
+    }
+  })
+}
+
 async function resolveSourceText(source) {
   if (source.sourceType === 'text') return source.text.trim()
   if (source.sourceType === 'document') {
-    const { data } = await graphApi.extractFile(source.file)
-    return data.extracted_text
+    // F-8C+D: extract all files in parallel, then combine into one payload.
+    const results = await extractAllFiles(source.files)
+
+    const succeeded = results.filter((r) => r.ok)
+    const failed    = results.filter((r) => !r.ok)
+
+    // Req 10: all files failed → throw, do not call /ingest
+    if (succeeded.length === 0) {
+      throw new Error(
+        `Could not extract text from any of your files. ` +
+        `First error — "${failed[0].filename}": ${failed[0].error}`
+      )
+    }
+
+    // Req 11+12: some files failed → continue with successful ones and
+    // surface a clear warning in the error message via the partial-failure
+    // prefix that rides along with the ingest result in handleGenerate().
+    // We store the warning in a local variable and prepend it to any
+    // downstream error so the user sees which files were skipped.
+    const skippedWarning = failed.length > 0
+      ? `Note: ${failed.length} file(s) could not be extracted and were skipped` +
+        ` (${failed.map((r) => r.filename).join(', ')}). ` +
+        'The tree was built from the remaining material.\n\n'
+      : ''
+
+    // Req 2+3: preserve original order; add "=== Material i of N: filename ==="
+    // markers so NT-01 can see clean source boundaries.
+    const N = succeeded.length
+    const sections = succeeded.map((r, i) =>
+      `=== Material ${i + 1} of ${N}: ${r.filename} ===\n\n${r.text}`
+    )
+
+    // Req 4+5: join and hard-trim to INGEST_MAX_CHARS (30 000, F-8E.1).
+    // Client-side cap gives a clear message instead of a backend 422.
+    const combined = sections.join('\n\n')
+    const trimmed  = combined.length > INGEST_MAX_CHARS
+      ? combined.slice(0, INGEST_MAX_CHARS)
+      : combined
+
+    if (trimmed.trim().length === 0) {
+      throw new Error('No usable text could be extracted from the selected files.')
+    }
+
+    // Attach skipped-file warning to the returned string via a module-level
+    // side-channel so handleGenerate() can surface it to the user without
+    // changing its own signature.  We use a plain closure variable instead
+    // of React state because resolveSourceText() is a module-level function.
+    _pendingPartialWarning = skippedWarning
+
+    return trimmed
   }
   if (source.sourceType === 'image') {
     // Dynamic import — WASM core only loaded when this branch is reached.
@@ -152,6 +246,7 @@ export default function NewTreeDialog({ onClose }) {
   const [processingState, setProcessingState] = useState('idle') // idle | processing | success | error
   const [activeStage, setActiveStage]     = useState(0)
   const [errorMsg, setErrorMsg]           = useState('')
+  const [partialWarning, setPartialWarning] = useState('')  // F-8D: skipped-files notice
   const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const metadataValid = metadata.treeName.trim().length > 0 && metadata.learningGoal.trim().length > 0
@@ -165,7 +260,7 @@ export default function NewTreeDialog({ onClose }) {
   // ── Close guard ──────────────────────────────────────────────────────────
   function requestClose() {
     if (isProcessing) return  // Rule 9: do not close while processing
-    const hasData = metadata.treeName || metadata.learningGoal || source.text || source.file || source.images.length
+    const hasData = metadata.treeName || metadata.learningGoal || source.text || source.files.length || source.images.length
     if (hasData) { setConfirmDiscard(true); return }
     onClose()
   }
@@ -176,6 +271,8 @@ export default function NewTreeDialog({ onClose }) {
     setProcessingState('processing')
     setActiveStage(0)
     setErrorMsg('')
+    setPartialWarning('')
+    _pendingPartialWarning = ''   // F-8D: reset before each run
 
     // F-6: generate a fresh UUID for each new tree — guarantees independence.
     // This is the session_id that the backend will use for all nodes/edges.
@@ -187,6 +284,8 @@ export default function NewTreeDialog({ onClose }) {
     try {
       advance(0)  // Reading material
       const text = await resolveSourceText(source)
+      // F-8D: capture any partial-failure warning set by resolveSourceText()
+      if (_pendingPartialWarning) setPartialWarning(_pendingPartialWarning)
       advance(1)  // Extracting
 
       // F-2: pass tree identity so backend can persist it on the Session row.
@@ -298,7 +397,20 @@ export default function NewTreeDialog({ onClose }) {
             <AIProcessingState processingState="processing" activeStage={activeStage} />
           )}
           {step === 3 && processingState === 'success' && (
-            <AIProcessingState processingState="success" activeStage={5} />
+            <>
+              <AIProcessingState processingState="success" activeStage={5} />
+              {partialWarning && (
+                <p className="text-xs mt-3 px-4 py-2 rounded-xl text-center"
+                  style={{
+                    background: 'rgba(251,191,36,0.07)',
+                    border: '1px solid rgba(251,191,36,0.25)',
+                    color: 'rgba(251,191,36,0.8)',
+                  }}
+                >
+                  ⚠ {partialWarning.replace(/\n\n$/, '')}
+                </p>
+              )}
+            </>
           )}
           {step === 3 && processingState === 'error' && (
             <GenerationError

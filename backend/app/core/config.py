@@ -28,10 +28,14 @@ class Settings(BaseSettings):
     # 3/minute ingest cap before the actual ingest request is sent.
     RATE_LIMIT_EXTRACT: str = "10/minute"
 
-    # Ingest payload limit (chars).  F-8A: raised from 5 000 to 12 000 to
-    # accommodate multi-source combined material.  The per-file extraction cap
-    # (extract.py MAX_CHARS = 5 000) is intentionally kept lower.
-    INGEST_MAX_CHARS: int = 12_000
+    # Ingest payload limit (chars).
+    # F-8A: raised from 5 000 to 12 000.
+    # F-8E.1: raised from 12 000 to 30 000 to accommodate up to 5 files ×
+    #   5 000 chars/file + source markers (~150 chars overhead per file).
+    #   Capacity: 5 × 5 000 = 25 000 content chars + ~750 marker chars = ~25 750,
+    #   giving comfortable headroom below the 30 000 ceiling.
+    #   The per-file extraction cap (extract.py MAX_CHARS = 5 000) is kept lower.
+    INGEST_MAX_CHARS: int = 30_000
 
     # ── LangFlow ──────────────────────────────────────────────────────────────
     LANGFLOW_BASE_URL: str = "http://localhost:7860"
