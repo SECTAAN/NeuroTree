@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useApp }                from '../../context/AppContext'
-import { graphApi }              from '../../services/api'
+import { graphApi, activeSession } from '../../services/api'
 import NewTreeStepper            from './NewTreeStepper'
 import InitializationStep        from './InitializationStep'
 import KnowledgeSourceStep       from './KnowledgeSourceStep'
@@ -21,14 +21,112 @@ function isSourceValid(source) {
 // ── Extract plain text from source for backend ───────────────────────────────
 // F-4: PDF/DOCX files are sent to POST /api/v1/material/extract which returns
 // the real plain text (capped at 5 000 chars).
-// Camera/OCR remains a placeholder until a future phase.
+// P0-3: Camera images are processed with Tesseract.js (client-side OCR).
+//   - Dynamic import so WASM is loaded only when the camera path is used.
+//   - Worker is always terminated, even on error.
+//   - Output is joined and capped at 5 000 chars to match IngestRequest.max_length.
+const OCR_MAX_CHARS = 5_000
+
+// ── OCR image preprocessing ──────────────────────────────────────────────────
+// Improves Tesseract accuracy on real camera photos (blur, shadow, low contrast).
+//
+// Steps applied to each image before recognition:
+//   1. Scale up   — if the longer edge < OCR_MIN_PX, upscale to OCR_MIN_PX while
+//                   preserving aspect ratio.  Tesseract degrades below ~150 DPI;
+//                   ~1 500 px on the long edge keeps an A4 page above that floor.
+//   2. Grayscale  — draw via a filter so the LSTM model sees a single-channel image.
+//   3. Gentle contrast — pixel-level stretch: (v − 128) × 1.15 + 128, clamped.
+//                   Factor 1.15 (15% boost) lifts low-contrast camera photos
+//                   without over-saturating thin strokes or box borders.
+//                   Diagnostic testing confirmed that factor > 1.2 degrades
+//                   crisp images (loses boxed-diagram labels) and compresses
+//                   blurred images to fewer recognised characters.
+//
+// Uses only OffscreenCanvas + ImageBitmap — both are available in all modern
+// browsers and require zero external dependencies.
+// Returns the processed OffscreenCanvas (Tesseract.js loadImage handles it via
+// OffscreenCanvas.convertToBlob internally).
+const OCR_MIN_PX = 1500   // minimum long-edge pixels before upscaling
+
+async function preprocessImageForOCR(imageFile) {
+  // Decode the File into a bitmap — handles JPEG/PNG/WebP uniformly.
+  const bitmap = await createImageBitmap(imageFile)
+  const { width: srcW, height: srcH } = bitmap
+
+  // 1. Scale: ensure the longer edge is at least OCR_MIN_PX.
+  const longEdge = Math.max(srcW, srcH)
+  const scale    = longEdge < OCR_MIN_PX ? OCR_MIN_PX / longEdge : 1
+  const dstW = Math.round(srcW * scale)
+  const dstH = Math.round(srcH * scale)
+
+  const canvas = new OffscreenCanvas(dstW, dstH)
+  const ctx    = canvas.getContext('2d')
+
+  // 2. Grayscale: canvas filter applied before drawing so the image data
+  //    already comes out single-channel. Avoids a second full-image pass.
+  ctx.filter = 'grayscale(1)'
+  ctx.drawImage(bitmap, 0, 0, dstW, dstH)
+  bitmap.close()   // release GPU memory
+
+  // 3. Gentle contrast enhancement: (v − 128) × 1.15 + 128, clamped.
+  //    Lifts faded printed text without blowing out thin strokes.
+  const imageData = ctx.getImageData(0, 0, dstW, dstH)
+  const d = imageData.data
+  const FACTOR = 1.15
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.max(0, Math.min(255, (d[i] - 128) * FACTOR + 128))
+    d[i] = d[i + 1] = d[i + 2] = v   // write to R, G, B (already greyscale; A unchanged)
+  }
+  ctx.putImageData(imageData, 0, 0)
+
+  return canvas
+}
+
 async function resolveSourceText(source) {
   if (source.sourceType === 'text') return source.text.trim()
   if (source.sourceType === 'document') {
     const { data } = await graphApi.extractFile(source.file)
     return data.extracted_text
   }
-  if (source.sourceType === 'image') return `[Camera scan: ${source.images.length} image(s)]`
+  if (source.sourceType === 'image') {
+    // Dynamic import — WASM core only loaded when this branch is reached.
+    const { createWorker } = await import('tesseract.js')
+    const worker = await createWorker('eng')
+    // PSM 11 (SPARSE_TEXT): collects all text regardless of layout.
+    // Required for camera photos of TCP/IP diagrams, layer stacks, tables,
+    // and other non-prose layouts where PSM 3 (AUTO) silently drops fragments.
+    await worker.setParameters({ tessedit_pageseg_mode: '11' })
+    const pages = []
+    try {
+      for (const imageFile of source.images) {
+        // Preprocess: grayscale + contrast enhancement before recognition.
+        // Raises Tesseract confidence on blurred/shadowed camera photos.
+        const processed = await preprocessImageForOCR(imageFile)
+        const { data: { text, confidence } } = await worker.recognize(processed)
+        // Development-only confidence log — does not affect production behaviour.
+        if (confidence < 50) {
+          console.warn(
+            `[NeuroTree OCR] Low confidence (${confidence.toFixed(0)}%) on "${imageFile.name}". ` +
+            'Consider retaking the photo with better lighting.'
+          )
+        }
+        // Normalize: PSM 11 emits a newline per fragment; collapse runs of 3+
+        // blank lines so NT-01 receives a clean, readable block of text.
+        const trimmed = text.trim().replace(/\n{3,}/g, '\n\n')
+        if (trimmed) pages.push(trimmed)
+      }
+    } finally {
+      // Always release the worker, whether OCR succeeded or threw.
+      await worker.terminate()
+    }
+    const combined = pages.join('\n\n').slice(0, OCR_MAX_CHARS)
+    if (!combined.trim()) {
+      throw new Error(
+        'No text could be extracted from the image(s). Please try a clearer photo.'
+      )
+    }
+    return combined
+  }
   return ''
 }
 
@@ -98,7 +196,15 @@ export default function NewTreeDialog({ onClose }) {
       )
       advance(2)  // Identifying prerequisites
 
-      // Fetch the resulting graph
+      // F-6: resolve and activate the session ID returned by ingest BEFORE
+      // calling fetchGraph() so the Axios interceptor sends X-Session-ID on
+      // the GET /api/v1/graph request.  setActiveSessionId also syncs React
+      // state and sessionStorage, but we must update the mutable ref first.
+      const resolvedSessionId = data?.session_id || newSessionId
+      activeSession.id = resolvedSessionId          // sync Axios interceptor immediately
+      setActiveSessionId(resolvedSessionId)         // sync React state + sessionStorage
+
+      // Fetch the resulting graph — X-Session-ID is now set correctly
       const graphRes = await graphApi.fetchGraph()
       advance(3)  // Building tree
 
@@ -110,11 +216,6 @@ export default function NewTreeDialog({ onClose }) {
           'Please try with more detailed or structured content.'
         )
       }
-
-      // F-6: activate the new session before setting graph data so the
-      // subsequent fetchGraph() (and all quiz calls) scope to the right tree.
-      const resolvedSessionId = data?.session_id || newSessionId
-      setActiveSessionId(resolvedSessionId)
 
       setGraphData(graphRes.data)
       advance(4)  // Preparing Skill Tree

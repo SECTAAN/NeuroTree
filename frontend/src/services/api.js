@@ -39,7 +39,7 @@ function getOrCreateUserId() {
     localStorage.setItem(USER_KEY, id)
     return id
   } catch {
-    return 'fallback-' + Math.random().toString(36).slice(2, 18)
+    return crypto.randomUUID()
   }
 }
 
