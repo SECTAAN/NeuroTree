@@ -1,6 +1,11 @@
 from pydantic import BaseModel, Field, field_validator
 import re
 
+# F-8A: import the settings constant so max_length stays in sync with config.
+# get_settings() is @lru_cache — safe to call at module import time.
+from app.core.config import get_settings as _get_settings
+_INGEST_MAX_CHARS: int = _get_settings().INGEST_MAX_CHARS  # evaluated once at import
+
 
 # ── Material ──────────────────────────────────────────────────────────────────
 
@@ -9,7 +14,7 @@ class IngestRequest(BaseModel):
     source_text: str = Field(
         ...,
         min_length=10,
-        max_length=5000,
+        max_length=_INGEST_MAX_CHARS,   # F-8A: 12 000 (was 5 000)
         description="Isi dokumen/buku teks yang akan diproses AI.",
     )
     # F-2: optional tree identity — persisted to Session row

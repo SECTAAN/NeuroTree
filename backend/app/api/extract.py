@@ -33,7 +33,7 @@ settings = get_settings()
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-MAX_CHARS         = 5_000          # must match IngestRequest.max_length
+MAX_CHARS         = 5_000          # per-file extraction cap (intentionally lower than IngestRequest.max_length)
 SUPPORTED_MIMES   = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -44,7 +44,7 @@ SUPPORTED_EXTS    = {".pdf", ".docx"}
 # ── Endpoint ──────────────────────────────────────────────────────────────────
 
 @router.post("/material/extract", status_code=status.HTTP_200_OK)
-@limiter.limit(settings.RATE_LIMIT_INGEST)
+@limiter.limit(settings.RATE_LIMIT_EXTRACT)   # F-8A: own limit — kept separate from RATE_LIMIT_INGEST
 async def extract_document(
     request: Request,                          # required by slowapi
     file: UploadFile = File(...),

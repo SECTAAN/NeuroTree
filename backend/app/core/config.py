@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     # for two concurrent sessions without hitting the limit.
     RATE_LIMIT_QUIZ: str = "20/minute"
     RATE_LIMIT_INGEST: str = "3/minute"
+    # F-8A: /extract has its own rate limit — separate from /ingest so that
+    # multi-source flows (N extract calls + 1 ingest call) do not exhaust the
+    # 3/minute ingest cap before the actual ingest request is sent.
+    RATE_LIMIT_EXTRACT: str = "10/minute"
+
+    # Ingest payload limit (chars).  F-8A: raised from 5 000 to 12 000 to
+    # accommodate multi-source combined material.  The per-file extraction cap
+    # (extract.py MAX_CHARS = 5 000) is intentionally kept lower.
+    INGEST_MAX_CHARS: int = 12_000
 
     # ── LangFlow ──────────────────────────────────────────────────────────────
     LANGFLOW_BASE_URL: str = "http://localhost:7860"
