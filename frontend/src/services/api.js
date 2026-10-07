@@ -145,6 +145,13 @@ export const graphApi = {
     api.delete(`/api/v1/sessions/${sessionId}`),
 
   /**
+   * PATCH /api/v1/sessions/:id/reveal — persist progressive reveal depth (F-8E.3).
+   * Fire-and-forget: callers do not need to await the result.
+   */
+  updateRevealDepth: (sessionId, revealedDepth) =>
+    api.patch(`/api/v1/sessions/${sessionId}/reveal`, { revealed_depth: revealedDepth }),
+
+  /**
    * POST /api/v1/material/extract — F-4: extract plain text from a PDF or DOCX file.
    * Returns { extracted_text, char_count, truncated }.
    * The caller should pass extracted_text to graphApi.ingest().

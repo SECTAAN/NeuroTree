@@ -15,6 +15,7 @@ import CyberpunkToolbar from './CyberpunkToolbar'
 import RouterModal      from '../router/RouterModal'
 import NoteModal        from '../notes/NoteModal'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
+import { graphApi, activeSession } from '../../services/api'
 // mockProgressiveApi removed — no /expand endpoint exists yet (Phase F-2+)
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
@@ -195,15 +196,24 @@ function Canvas({ graphData }) {
       return
     }
 
-    // ── Brand-new graph: reset to depth-0 reveal ──────────────────────────
+    // ── Brand-new graph: restore persisted reveal depth (or start at 0) ───
+    // graphData.revealed_depth is returned by GET /api/v1/graph (F-8E.3).
+    // For a freshly generated tree this will be 0; for a refreshed session
+    // it will be whatever depth the user had already revealed.
     const { depth } = computeLayout(graphData.nodes, graphData.edges)
     graphRef.current = { nodes: graphData.nodes, edges: graphData.edges, depth }
 
-    setRevealedDepth(0)
+    const maxAvailable = Math.max(0, ...Object.values(depth))
+    const restoredDepth = Math.min(
+      typeof graphData.revealed_depth === 'number' ? graphData.revealed_depth : 0,
+      maxAvailable,
+    )
+
+    setRevealedDepth(restoredDepth)
     setGrowingNodeId(null)
 
     const { rfNodes, rfEdges } = buildRFArrays(
-      graphData.nodes, graphData.edges, depth, 0
+      graphData.nodes, graphData.edges, depth, restoredDepth
     )
     applyRFArrays({ rfNodes, rfEdges })
   }, [graphData, buildRFArrays, applyRFArrays, setNodes])
@@ -314,6 +324,13 @@ function Canvas({ graphData }) {
       // React Flow nodes/edges (they're applied via className in NeonLampNode
       // and EnergyEdge respectively).
       applyRFArrays({ rfNodes, rfEdges })
+
+      // F-8E.3: persist reveal depth so a page refresh restores this state.
+      // Fire-and-forget — a network failure does not affect the local UI.
+      const sid = activeSession.id
+      if (sid) {
+        graphApi.updateRevealDepth(sid, newRevealedDepth).catch(() => {})
+      }
     }, 420)   // matches growPulse duration (1s) with a comfortable lead-in
   }, [activeTool, revealedDepth, growingNodeId, buildRFArrays, applyRFArrays, setNodes])
 

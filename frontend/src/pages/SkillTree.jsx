@@ -106,6 +106,7 @@ export default function SkillTree() {
     quizOpen, closeQuiz, quizNode,
     updateNodeMastery,
     openQuiz,
+    activeSessionId,
   } = useApp()
 
   const [loading, setLoading]                 = useState(!graphData?.nodes?.length)
@@ -116,8 +117,11 @@ export default function SkillTree() {
   // ── NT-04 recommendation state ────────────────────────────────────────────
   const [recommendation, setRecommendation] = useState(null)
 
-  // Fetch graph if empty (direct navigation or page refresh)
+  // Fetch graph if empty (direct navigation or page refresh).
+  // F-8E.3: wait for activeSessionId before fetching so the request always
+  // carries the correct X-Session-ID header after a Ctrl+R refresh.
   useEffect(() => {
+    if (!activeSessionId) return
     if (graphData?.nodes?.length) { setLoading(false); return }
     let cancelled = false
     setLoading(true)
@@ -125,7 +129,7 @@ export default function SkillTree() {
       .then(({ data }) => { if (!cancelled) { setGraphData(data); setLoading(false) } })
       .catch((err)    => { if (!cancelled) { setError(err.message); setLoading(false) } })
     return () => { cancelled = true }
-  }, [])
+  }, [activeSessionId])
 
   // F-2 / F-6: Recover tree name from backend if context lost (e.g. page refresh).
   // Use activeSession.id to find the right session when multiple trees exist.

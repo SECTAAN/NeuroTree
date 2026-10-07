@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import List, TYPE_CHECKING
-from sqlalchemy import String, DateTime, Text, Index
+from sqlalchemy import String, DateTime, Text, Index, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -45,6 +45,14 @@ class Session(Base):
         nullable=False,
         default="",
         server_default="",
+    )
+    # F-8E.3: persist the BFS depth revealed so far for progressive reveal
+    # restoration after a page refresh.  Default 0 = root only visible.
+    revealed_depth: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
     )
 
     # Relationships

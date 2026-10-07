@@ -19,7 +19,7 @@ Multi-session architecture (F-6):
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session as DbSession
 
 from app.api.dependencies import get_current_user_id, get_active_session_id
@@ -118,6 +118,8 @@ async def ingest_material(
                     session_row.tree_name = body.tree_name.strip()
                 if body.learning_goal.strip():
                     session_row.learning_goal = body.learning_goal.strip()
+                # F-8E.3: reset reveal depth — new graph always starts at root
+                session_row.revealed_depth = 0
         db.flush()
 
         # 3. Clear existing graph for this session (re-ingest replaces previous)
@@ -192,7 +194,11 @@ def get_visual_graph(
         .all()
     )
 
+    session_row = db.query(Session).filter(Session.uuid == session_id).first()
+    revealed_depth = session_row.revealed_depth if session_row else 0
+
     return {
+        "revealed_depth": revealed_depth,
         "nodes": [
             {
                 "id": n.id,
@@ -323,6 +329,53 @@ def get_sessions(
         })
 
     return {"sessions": results}
+
+
+# ── G-2. Update Reveal Depth ──────────────────────────────────────────────────
+
+class RevealDepthRequest(BaseModel):
+    revealed_depth: int
+
+    @field_validator("revealed_depth")
+    @classmethod
+    def non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("revealed_depth must be >= 0")
+        return v
+
+
+@router.patch("/sessions/{session_id}/reveal", status_code=status.HTTP_200_OK)
+def update_reveal_depth(
+    session_id: str,
+    body: RevealDepthRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: DbSession = Depends(get_db),
+):
+    """
+    Persist the BFS depth currently revealed for a session so that the
+    progressive-reveal state survives a page refresh (F-8E.3).
+
+    Only the owning user may update their own session.
+    """
+    session_row = db.query(Session).filter(Session.uuid == session_id).first()
+
+    if not session_row or session_row.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session tidak ditemukan atau bukan milik Anda.",
+        )
+
+    session_row.revealed_depth = body.revealed_depth
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Gagal memperbarui reveal depth.",
+        )
+
+    return {"session_id": session_id, "revealed_depth": session_row.revealed_depth}
 
 
 # ── G. Rename Session ─────────────────────────────────────────────────────────
