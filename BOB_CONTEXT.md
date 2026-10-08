@@ -2,11 +2,9 @@
 # Salin seluruh isi file ini sebagai pesan PERTAMA ke IBM Bob di sesi baru.
 # Dengan ini Bob langsung paham kondisi proyek tanpa perlu dijelaskan ulang.
 #
-# ⚡ File ini diperbarui otomatis oleh: python scripts/handoff.py
-#    Jalankan script itu setiap kali selesai kerja sebelum git push.
-#
-# Terakhir diperbarui : 2025-07-14
-# Milestone terakhir  : M-9B + Release Audit selesai
+# Terakhir diperbarui : 2026-10-08 09:41
+# Oleh (branch)       : master2
+# Milestone terakhir  : M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL
 
 ---
 
@@ -14,18 +12,24 @@
 
 Proyek: NeuroTree — AI adaptive learning platform. Branch Git: `master2`.
 
+> ⚠️  **Catatan dari handoff sebelumnya:** 318/318 tests pass. P1-6 was already clean — no auto-advance existed. Remaining: optional dead-code cleanup only.
+
 Stack:
 - Frontend: React + Vite + TailwindCSS + React Flow (port 5173)
 - Backend: Python + FastAPI + SQLite (port 8000)
 - AI: Langflow (port 7860) — 5 flows: NT-01 s/d NT-05
 
-**Milestone terakhir selesai: M-9B + Release Audit**
+**Milestone terakhir selesai: M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL**
 
-Yang sudah selesai (jangan diubah):
-- F-1 s/d F-6: ingest, graph, quiz, mastery, sessions, multi-tree, PDF/DOCX, camera OCR
-- M-5 s/d M-9B: Master Light node, assessment, unlock, graph sync, RouterModal real data
-- Audit fix: Axios interceptor preserve `err.status`; RouterModal 403/404 guard diperbaiki
-- 298/298 backend tests pass. Frontend build clean (507 kB advisory — pre-existing).
+Git log terbaru:
+- 7426864 feat: M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL + automation scripts
+- d9739da feat: M-9B — RouterModal real data + audit 403/404 fix
+- bf13403 feat: M-9A — real camera OCR confirmation + extract.py hardening
+- 3428c5c feat: M-8B — Master Light post-assessment graph refresh + live sync
+- 43761e4 fix: M-8A cleanup — stale comment, JSDoc, pnpm-workspace, live E2E test
+- 0e0b2f4 feat: M-7 — Master Light apex creation, E2E validation, stats exclusion
+
+Commits belum di-push: 0
 
 File penting:
 - Backend API: `backend/app/api/` (material.py, quiz.py, master_light.py, career.py, extract.py)
@@ -40,7 +44,7 @@ Remaining issues (prioritas tinggi):
 - P1-6: Landing page auto-advance setelah 6 detik (ada setTimeout yang navigasi otomatis)
 - P0-4: VITE_API_URL hardcoded di api.js (butuh env var untuk production deploy)
 
-Remaining cleanup (opsional, tidak blocking):
+Remaining cleanup (opsional):
 - Hapus `calculate_progressive_mastery()` dari mastery_service.py (legacy, tidak dipakai di prod)
 - Hapus `mockProgressiveApi` export dari api.js (tidak diimport di mana pun)
 
