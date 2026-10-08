@@ -77,3 +77,32 @@ class EvaluateAnswerRequest(BaseModel):
     @classmethod
     def strip_answer(cls, v: str) -> str:
         return v.strip()
+
+
+# ── Master Light (M-5) ────────────────────────────────────────────────────────
+
+class GenerateMasterLightRequest(BaseModel):
+    """POST /api/v1/master-light/generate — request ML assessment question."""
+    node_id: str = Field(..., min_length=1, max_length=64)
+
+
+class EvaluateMasterLightRequest(BaseModel):
+    """POST /api/v1/master-light/evaluate — evaluate ML assessment answer."""
+    node_id: str = Field(..., min_length=1, max_length=64)
+    user_answer: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Jawaban esai user untuk Master Light assessment.",
+    )
+    question_index: int = Field(
+        default=0,
+        ge=0,
+        le=2,
+        description="0-based position in the 3-question ML session.",
+    )
+
+    @field_validator("user_answer")
+    @classmethod
+    def strip_ml_answer(cls, v: str) -> str:
+        return v.strip()

@@ -112,6 +112,9 @@ def check_and_unlock_dependents(
     source.  If the source node now meets UNLOCK_THRESHOLD, set the target node
     status to 'unlocked' (provided all of *its* prerequisites are also met).
 
+    Master Light nodes (node_type='master_light') are excluded from normal
+    prerequisite/unlock logic — they are handled by check_master_light_unlock().
+
     Returns a list of node IDs that were newly unlocked.
     """
     if node.mastery_score < UNLOCK_THRESHOLD:
@@ -135,6 +138,10 @@ def check_and_unlock_dependents(
         if target is None or target.status == "unlocked":
             continue
 
+        # M-6: skip master_light nodes — they use their own unlock logic
+        if getattr(target, "node_type", "knowledge") == "master_light":
+            continue
+
         # Check ALL prerequisites of target_node are satisfied
         incoming_edges: list[Edge] = (
             db.query(Edge)
@@ -151,6 +158,63 @@ def check_and_unlock_dependents(
             newly_unlocked.append(target.id)
 
     db.flush()  # write changes before caller commits
+    return newly_unlocked
+
+
+def check_master_light_unlock(session_id: str, db: DbSession) -> list[str]:
+    """
+    M-6: Check whether the Master Light node(s) in the session should be unlocked.
+
+    Unlock condition: ALL node_type='knowledge' nodes in the session have
+    mastery_score >= UNLOCK_THRESHOLD (70).
+
+    When the condition is met:
+      - Sets master_light_unlocked = True on every master_light node.
+      - Does NOT touch mastery_score or status (those remain unchanged).
+
+    Master Light nodes are deliberately excluded from the knowledge-node check
+    so that an incomplete ML assessment never blocks the unlock condition.
+
+    Returns a list of master_light node IDs that were newly unlocked.
+    """
+    # Fetch all knowledge nodes in this session
+    knowledge_nodes: list[Node] = (
+        db.query(Node)
+        .filter(
+            Node.session_id == session_id,
+            Node.node_type == "knowledge",
+        )
+        .all()
+    )
+
+    # If there are no knowledge nodes yet (edge case), do nothing
+    if not knowledge_nodes:
+        return []
+
+    # Unlock condition: every knowledge node is mastered
+    all_mastered = all(n.mastery_score >= UNLOCK_THRESHOLD for n in knowledge_nodes)
+    if not all_mastered:
+        return []
+
+    # Find master_light nodes that are not yet unlocked
+    ml_nodes: list[Node] = (
+        db.query(Node)
+        .filter(
+            Node.session_id == session_id,
+            Node.node_type == "master_light",
+            Node.master_light_unlocked == False,  # noqa: E712
+        )
+        .all()
+    )
+
+    newly_unlocked: list[str] = []
+    for ml_node in ml_nodes:
+        ml_node.master_light_unlocked = True
+        newly_unlocked.append(ml_node.id)
+
+    if newly_unlocked:
+        db.flush()
+
     return newly_unlocked
 
 
@@ -178,9 +242,15 @@ def get_next_learning_recommendations(
     2. Score each by the number of outgoing edges (foundational importance).
     3. Return the top_n highest-priority nodes.
     """
+    # M-6: exclude master_light nodes — they are not part of normal learning flow
     unlocked_nodes: list[Node] = (
         db.query(Node)
-        .filter(Node.session_id == session_id, Node.status == "unlocked", Node.mastery_score < MASTERY_MAX)
+        .filter(
+            Node.session_id == session_id,
+            Node.status == "unlocked",
+            Node.mastery_score < MASTERY_MAX,
+            Node.node_type == "knowledge",
+        )
         .all()
     )
 

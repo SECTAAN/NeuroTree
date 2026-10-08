@@ -278,3 +278,26 @@ export const mockProgressiveApi = {
     })
   },
 }
+
+export const masterLightApi = {
+  /**
+   * POST /api/v1/master-light/generate
+   * Generates a Master Light assessment question for the given master_light node.
+   * Returns { node_id, question }
+   */
+  generate: (nodeId) =>
+    api.post('/api/v1/master-light/generate', { node_id: nodeId }),
+
+  /**
+   * POST /api/v1/master-light/evaluate
+   * Evaluates user's answer and returns master_light_mastery score.
+   * question_index: 0 | 1 | 2 (3-question session)
+   * Returns { ai_score, feedback, master_light_mastery, is_final, unlocked_new_nodes }
+   */
+  evaluate: (nodeId, userAnswer, questionIndex = 0) =>
+    api.post('/api/v1/master-light/evaluate', {
+      node_id:        nodeId,
+      user_answer:    userAnswer,
+      question_index: questionIndex,
+    }),
+}

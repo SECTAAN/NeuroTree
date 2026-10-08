@@ -33,12 +33,32 @@ class Node(Base):
     # F-5: stores the NT-02 question text so NT-03 can evaluate against the actual question
     last_question: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, server_default="")
     # F-7A: in-progress scores for the current 3-question quiz session.
-    # Stores a JSON list of raw NT-03 scores accumulated during one session.
-    # Reset to [] at the start of each new session (question_index == 0).
-    # Never read by frontend — backend-only accumulator.
     quiz_session_scores: Mapped[Any] = mapped_column(
         JSON, nullable=True, default=list, server_default="[]"
     )
+    # M-5: node_type distinguishes regular knowledge nodes from the final Master Light node.
+    # 'knowledge' (default) | 'master_light'
+    node_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="knowledge", server_default="knowledge"
+    )
+    # M-5: master_light_unlocked — True when all prerequisite knowledge nodes
+    # are mastered (mastery_score >= 70). Set by check_and_unlock_dependents.
+    master_light_unlocked: Mapped[bool] = mapped_column(
+        nullable=False, default=False, server_default="0"
+    )
+    # M-5: master_light_mastery — committed ML assessment score (0–100).
+    # Only written after the Q2 evaluation of the Master Light 3-question session.
+    master_light_mastery: Mapped[float] = mapped_column(
+        Float, nullable=False, default=0.0, server_default="0"
+    )
+    # M-5: in-progress ML assessment scores (same accumulator pattern as quiz_session_scores).
+    ml_session_scores: Mapped[Any] = mapped_column(
+        JSON, nullable=True, default=list, server_default="[]"
+    )
+    # M-5: last ML assessment question text (stored server-side like last_question).
+    ml_last_question: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, server_default="")
+    # M-5: last ML expected answer (stored server-side).
+    ml_last_expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     # Relationships
     session: Mapped["Session"] = relationship(

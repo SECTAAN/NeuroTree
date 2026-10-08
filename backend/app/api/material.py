@@ -195,10 +195,13 @@ def get_visual_graph(
     return {
         "nodes": [
             {
-                "id": n.id,
-                "title": n.title,
-                "status": n.status,
-                "mastery_score": n.mastery_score,
+                "id":                    n.id,
+                "title":                 n.title,
+                "status":                n.status,
+                "mastery_score":         n.mastery_score,
+                "node_type":             getattr(n, "node_type", "knowledge") or "knowledge",
+                "master_light_unlocked": getattr(n, "master_light_unlocked", False) or False,
+                "master_light_mastery":  getattr(n, "master_light_mastery", 0.0) or 0.0,
             }
             for n in nodes
         ],
