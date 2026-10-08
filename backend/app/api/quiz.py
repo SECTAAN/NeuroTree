@@ -230,9 +230,10 @@ async def get_recommendations(
     from app.models.edge import Edge as EdgeModel
     from app.services.mastery_service import UNLOCK_THRESHOLD
 
+    # M-7: exclude master_light nodes from NT-04 recommendation input
     nodes = (
         db.query(Node)
-        .filter(Node.session_id == session_id)
+        .filter(Node.session_id == session_id, Node.node_type == "knowledge")
         .all()
     )
     edges = (
