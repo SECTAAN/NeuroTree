@@ -1,42 +1,156 @@
 import { useState, useEffect } from 'react'
 import FlashcardPanel from '../flashcards/FlashcardPanel'
-import { getMockRouterData } from '../../services/mockRouterData'
+import { graphApi } from '../../services/api'
 
 /**
  * RouterModal — P1 Material Hub modal (spec 10.67).
  *
  * Opened when the user clicks a RouterMarker (▣) on an EnergyEdge.
- * Receives a router context object and looks up mock content via getMockRouterData().
+ * Receives a router context object and fetches REAL node content via
+ * graphApi.fetchNode() for both the source and target nodes.
+ *
+ * Real data contract (GET /api/v1/node/{id}):
+ *   { id, title, content, key_concepts, mastery_score, mastery_level }
+ *
+ * Locked nodes return HTTP 403 — we surface them gracefully.
  *
  * Two tabs:
- *   CONNECTION  — source/target header, relationship explanation, key concepts, material list
- *   FLASHCARDS  — FlashcardPanel with active-recall cards sourced from this connection
+ *   CONNECTION  — source/target header, relationship explanation, key
+ *                 concepts from both nodes, both node content summaries
+ *   FLASHCARDS  — FlashcardPanel with cards built from real key_concepts
  *
  * Props:
  *   router    — { sourceNodeId, targetNodeId, sourceLabel, targetLabel, ... }
  *   onClose   — () => void
  */
-export default function RouterModal({ router, onClose }) {
-  const [tab, setTab]     = useState('connection')  // 'connection' | 'flashcards'
-  const [data, setData]   = useState(null)
-  const [loading, setLoading] = useState(true)
 
-  // Simulate async loading (Milestone 6: replace with real API call)
+// ── Flashcard builder ─────────────────────────────────────────────────────────
+// Generates active-recall cards from real key_concepts arrays.
+// Each concept from source becomes one card; same for target.
+// Capped at 6 total cards so the panel stays usable.
+let _fcSeq = 0
+function buildFlashcards(sourceNode, targetNode) {
+  const cards = []
+
+  function addConcepts(node, concepts) {
+    for (const concept of (concepts ?? [])) {
+      cards.push({
+        id:           `fc-${++_fcSeq}-${node.id}`,
+        front:        `Apa yang dimaksud dengan "${concept}" dalam konteks "${node.title}"?`,
+        back:         node.content
+          ? `${concept} adalah bagian dari "${node.title}". ${node.content.slice(0, 200).trimEnd()}…`
+          : `${concept} adalah salah satu konsep kunci dalam "${node.title}".`,
+        sourceNodeId: node.id,
+      })
+    }
+  }
+
+  if (sourceNode) addConcepts(sourceNode, sourceNode.key_concepts)
+  if (targetNode)  addConcepts(targetNode,  targetNode.key_concepts)
+
+  // Cap at 6 to keep the session manageable
+  return cards.slice(0, 6)
+}
+
+// ── RouterData builder ────────────────────────────────────────────────────────
+// Assembles the shape expected by ConnectionTab from two real node objects.
+// Either node may be null (locked, 403, or missing).
+function buildRouterData(sourceNode, targetNode, sourceLabel, targetLabel) {
+  const srcTitle = sourceNode?.title ?? sourceLabel
+  const tgtTitle = targetNode?.title  ?? targetLabel
+
+  const allConcepts = [
+    ...(sourceNode?.key_concepts ?? []),
+    ...(targetNode?.key_concepts  ?? []),
+  ]
+  // Deduplicate while preserving order
+  const keyConcepts = [...new Set(allConcepts)]
+
+  const relationshipExplanation = (sourceNode && targetNode)
+    ? `"${tgtTitle}" berfokus pada konsep yang dibangun langsung di atas "${srcTitle}". ` +
+      `Menguasai ${srcTitle} memastikan kamu memiliki fondasi yang dibutuhkan untuk memahami ` +
+      `dan menerapkan ${tgtTitle} secara mendalam.`
+    : `${tgtTitle} merupakan materi lanjutan dari ${srcTitle}. ` +
+      `Pahami prasyarat ini untuk membuka potensi penuh dari koneksi ini.`
+
+  // Build material cards from real node content
+  const materials = []
+  if (sourceNode?.content) {
+    materials.push({
+      id:      `mat-src-${sourceNode.id}`,
+      type:    'source',
+      title:   sourceNode.title,
+      content: sourceNode.content,
+    })
+  }
+  if (targetNode?.content) {
+    materials.push({
+      id:      `mat-tgt-${targetNode.id}`,
+      type:    'summary',
+      title:   targetNode.title,
+      content: targetNode.content,
+    })
+  }
+
+  return {
+    relationshipExplanation,
+    keyConcepts,
+    materials,
+    flashcards: buildFlashcards(sourceNode, targetNode),
+    sourceNodeId: sourceNode?.id,
+    targetNodeId: targetNode?.id,
+    sourceLabel:  srcTitle,
+    targetLabel:  tgtTitle,
+  }
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+export default function RouterModal({ router, onClose }) {
+  const [tab,     setTab]     = useState('connection')
+  const [data,    setData]    = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null)
+
+  // Fetch real node content for both ends of the edge
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
     setData(null)
-    const t = setTimeout(() => {
-      const result = getMockRouterData(
-        router.sourceNodeId,
-        router.targetNodeId,
-        router.sourceLabel,
-        router.targetLabel,
-      )
-      setData(result)
-      setLoading(false)
-    }, 320)   // brief artificial delay so loading state is visible
-    return () => clearTimeout(t)
-  }, [router.sourceNodeId, router.targetNodeId])
+    setError(null)
+
+    // Fetch both nodes in parallel; 403 (locked) is treated as null, not error
+    const fetchNode = (nodeId) =>
+      graphApi.fetchNode(nodeId)
+        .then((r) => r.data)
+        .catch((err) => {
+          // 403 = locked node: return null (show graceful empty state)
+          // 404 = node doesn't exist in this session: return null
+          // err.status is set by the Axios interceptor in api.js (err.response is stripped)
+          if (err?.status === 403 || err?.status === 404) return null
+          throw err   // any other error propagates
+        })
+
+    Promise.all([
+      fetchNode(router.sourceNodeId),
+      fetchNode(router.targetNodeId),
+    ])
+      .then(([srcNode, tgtNode]) => {
+        if (cancelled) return
+        setData(buildRouterData(
+          srcNode, tgtNode,
+          router.sourceLabel ?? router.sourceNodeId,
+          router.targetLabel ?? router.targetNodeId,
+        ))
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err?.message ?? 'Gagal memuat konten router.')
+        setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [router.sourceNodeId, router.targetNodeId])   // re-fetch when edge changes
 
   // Close on Escape
   useEffect(() => {
@@ -79,6 +193,8 @@ export default function RouterModal({ router, onClose }) {
         <div className="flex-1 overflow-y-auto px-5 pb-5">
           {loading ? (
             <LoadingState />
+          ) : error ? (
+            <ErrorState message={error} onClose={onClose} />
           ) : tab === 'connection' ? (
             <ConnectionTab data={data} />
           ) : (
@@ -210,6 +326,15 @@ function ConnectionTab({ data }) {
             ))}
           </div>
         </Section>
+      )}
+
+      {/* ── Empty state: both nodes locked ──────────────────────────────── */}
+      {(!data.materials?.length && !data.keyConcepts?.length) && (
+        <div className="py-8 text-center">
+          <p className="text-white/30 text-sm">
+            🔒 Selesaikan prasyarat untuk membuka konten koneksi ini.
+          </p>
+        </div>
       )}
     </div>
   )
@@ -349,7 +474,23 @@ function LoadingState() {
         <span style={{ color: 'rgba(0,243,255,0.7)', fontSize: 16 }}>▣</span>
       </div>
       <p className="text-xs text-white/30 font-mono tracking-widest">ROUTER CONNECTING…</p>
-      <p className="text-xs text-white/20">Analyzing knowledge relationship</p>
+      <p className="text-xs text-white/20">Loading node content</p>
+    </div>
+  )
+}
+
+function ErrorState({ message, onClose }) {
+  return (
+    <div className="py-10 text-center">
+      <p className="text-white/40 text-sm mb-2">Koneksi terputus</p>
+      <p className="text-white/25 text-xs mb-5 max-w-xs mx-auto">{message}</p>
+      <button
+        onClick={onClose}
+        className="btn-liquid px-5 py-2 text-xs"
+        style={{ borderColor: 'rgba(255,255,255,0.1)' }}
+      >
+        Tutup
+      </button>
     </div>
   )
 }

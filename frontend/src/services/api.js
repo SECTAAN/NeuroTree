@@ -94,7 +94,10 @@ api.interceptors.response.use(
       error.message ||
       'Sirkuit AI sedang mengalami gangguan sementara.'
     console.error('[NeuroTree API Error]', msg, error)
-    return Promise.reject(new Error(msg))
+    const err = new Error(msg)
+    // Preserve the HTTP status so callers can check err.status (e.g. 403 locked-node guard)
+    if (status) err.status = status
+    return Promise.reject(err)
   }
 )
 
