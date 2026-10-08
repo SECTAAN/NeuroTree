@@ -1,5 +1,6 @@
 import { Handle, Position } from '@xyflow/react'
 import { useState } from 'react'
+import { useApp } from '../../context/AppContext'
 
 /**
  * MasterLightNode — the final/max-depth knowledge node.
@@ -20,6 +21,7 @@ import { useState } from 'react'
  */
 export default function MasterLightNode({ data, selected }) {
   const [modalOpen, setModalOpen] = useState(false)
+  const { updateMasterLightMastery } = useApp()
 
   const isUnlocked = Boolean(data.master_light_unlocked)
   const mlMastery  = (data.master_light_mastery ?? 0) / 100   // 0–1
@@ -295,6 +297,7 @@ export default function MasterLightNode({ data, selected }) {
         <MasterLightModalLazy
           node={data}
           onClose={() => setModalOpen(false)}
+          onMasteryUpdate={updateMasterLightMastery}
         />
       )}
     </>
@@ -303,11 +306,11 @@ export default function MasterLightNode({ data, selected }) {
 
 // Lazy wrapper — avoids circular import; MasterLightModal imports masterLightApi
 // which is in the same services tree. Using a dynamic require at render time.
-function MasterLightModalLazy({ node, onClose }) {
+function MasterLightModalLazy({ node, onClose, onMasteryUpdate }) {
   const [Comp, setComp] = useState(null)
   if (!Comp) {
     import('../quiz/MasterLightModal').then((m) => setComp(() => m.default))
     return null
   }
-  return <Comp node={node} onClose={onClose} />
+  return <Comp node={node} onClose={onClose} onMasteryUpdate={onMasteryUpdate} />
 }

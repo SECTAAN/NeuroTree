@@ -140,6 +140,30 @@ export function AppProvider({ children }) {
       .catch(() => { /* silent — optimistic state is still valid */ })
   }, [])
 
+  // ── Master Light mastery update (M-8B) ─────────────────────────────────────
+  // Called by MasterLightModal after Q2 is_final=true.
+  // 1. Optimistic patch: update master_light_mastery on the ML node immediately
+  //    so the gold glow lights up without waiting for the network round-trip.
+  // 2. Background re-sync: same fetchGraph fire-and-forget as updateNodeMastery,
+  //    which also picks up master_light_unlocked (may already be true, but
+  //    ensures the graph is in sync).
+  const updateMasterLightMastery = useCallback((nodeId, mlMastery) => {
+    // Optimistic patch — light up the ML node glow immediately
+    setGraphData((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) =>
+        n.id === nodeId
+          ? { ...n, master_light_mastery: mlMastery }
+          : n
+      ),
+    }))
+
+    // Authoritative re-sync — picks up any field the optimistic patch missed
+    graphApi.fetchGraph()
+      .then(({ data }) => setGraphData(data))
+      .catch(() => { /* silent — optimistic state already reflects the result */ })
+  }, [])
+
   /**
    * navigateTo — navigate to a page.
    *
@@ -172,6 +196,7 @@ export function AppProvider({ children }) {
       selectedNode, setSelectedNode,
       quizOpen, quizNode, openQuiz, closeQuiz,
       updateNodeMastery,
+      updateMasterLightMastery,   // M-8B: ML post-assessment graph re-sync
       // F-6 multi-session
       activeSessionId, setActiveSessionId,
       // Legacy compat — consumers that used sessionId: SESSION_ID still work
