@@ -12,7 +12,10 @@ for the caller to pass to POST /api/v1/material/ingest.
 Design constraints:
   - Output is capped at MAX_CHARS (5 000) to match IngestRequest.max_length.
   - Truncation is at the last sentence boundary before the cap.
-  - Camera/image files are not handled here — they stay as a frontend placeholder.
+  - Camera/image files (JPEG, PNG, WebP, ...) are handled client-side via
+    Tesseract.js in NewTreeDialog.resolveSourceText() -- they are NOT sent to
+    this endpoint. Sending an image here returns HTTP 415 with a clear message
+    directing the caller to use the camera scanner tab instead.
   - This endpoint does NOT call NT-01 or touch the database; it is a pure
     extraction utility so the existing /ingest contract remains unchanged.
 """
@@ -40,6 +43,10 @@ SUPPORTED_MIMES   = {
 }
 SUPPORTED_EXTS    = {".pdf", ".docx"}
 
+# Image extensions that users might accidentally upload to /extract.
+# These are handled client-side by Tesseract.js — return a clear redirect message.
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".tif", ".heic"}
+
 
 # ── Endpoint ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +69,16 @@ async def extract_document(
     """
     # ── Format guard ──────────────────────────────────────────────────────────
     ext = _file_extension(file.filename)
+    # Image files: return a specific message directing to the camera scanner
+    if ext in IMAGE_EXTS:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=(
+                f"Format gambar '{ext}' tidak dapat diekstrak di sini. "
+                "Gunakan tab 'Camera / Scan' di dialog New Tree — "
+                "OCR dilakukan langsung di browser menggunakan Tesseract.js."
+            ),
+        )
     if ext not in SUPPORTED_EXTS:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
