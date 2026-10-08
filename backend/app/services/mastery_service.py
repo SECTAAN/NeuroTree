@@ -22,8 +22,8 @@ from app.models.node import Node
 from app.models.edge import Edge
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-PROGRESSION_WEIGHT: float = 0.4   # per-question weight (calculate_progressive_mastery)
-# F-7B.1: session-specific weight, deliberately lower than PROGRESSION_WEIGHT.
+PROGRESSION_WEIGHT: float = 0.4   # legacy single-question weight (kept for test backward compat)
+# F-7B.1: session-specific weight, deliberately lower than a single-question weight.
 # Tuned so that 3 perfect sessions (100,100,100) × 3 reach ≥ 70:
 #   session 1: 0   + 100 × 0.25 = 25
 #   session 2: 25  + 100 × 0.25 = 50
@@ -50,11 +50,11 @@ def get_mastery_level(mastery_score: float) -> str:
     return "FULL"
 
 
-# ── Core Calculation ──────────────────────────────────────────────────────────
-
 def calculate_progressive_mastery(previous_mastery: float, ai_score: int) -> float:
     """
-    Phase 7 pseudocode implementation.
+    Legacy single-question mastery calculation (Phase 7 pseudocode).
+    Superseded by calculate_session_mastery() for the 3-question session flow.
+    Retained for test backward compatibility.
 
     gained_brightness = ai_score * 0.4
     new_mastery       = min(100, previous_mastery + gained_brightness)
