@@ -2,9 +2,9 @@
 # Salin seluruh isi file ini sebagai pesan PERTAMA ke IBM Bob di sesi baru.
 # Dengan ini Bob langsung paham kondisi proyek tanpa perlu dijelaskan ulang.
 #
-# Terakhir diperbarui : 2026-10-08 09:41
+# Terakhir diperbarui : 2026-10-08 09:51
 # Oleh (branch)       : master2
-# Milestone terakhir  : M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL
+# Milestone terakhir  : M-11 RC Final QA — 318/318 pass, live E2E clean, dead-code removed, READY for demo
 
 ---
 
@@ -12,22 +12,22 @@
 
 Proyek: NeuroTree — AI adaptive learning platform. Branch Git: `master2`.
 
-> ⚠️  **Catatan dari handoff sebelumnya:** 318/318 tests pass. P1-6 was already clean — no auto-advance existed. Remaining: optional dead-code cleanup only.
+> ⚠️  **Catatan dari handoff sebelumnya:** No blockers. All P0/P1 resolved. mockProgressiveApi + mockRouterData.js deleted. calculate_progressive_mastery kept (test compat). 507kB chunk advisory is pre-existing non-blocking.
 
 Stack:
 - Frontend: React + Vite + TailwindCSS + React Flow (port 5173)
 - Backend: Python + FastAPI + SQLite (port 8000)
 - AI: Langflow (port 7860) — 5 flows: NT-01 s/d NT-05
 
-**Milestone terakhir selesai: M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL**
+**Milestone terakhir selesai: M-11 RC Final QA — 318/318 pass, live E2E clean, dead-code removed, READY for demo**
 
 Git log terbaru:
+- 10b342b chore: M-11 dead-code cleanup — remove mockProgressiveApi, mockRouterData.js; clarify legacy function docstrings
+- 677a69b chore: commit .gitignore log-file entries (BOM + dev log patterns)
+- e7e0a92 chore: handoff — M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL
 - 7426864 feat: M-10 — P1-5 chip race fix, P1-6 confirmed clean, P0-4 VITE_API_URL + automation scripts
 - d9739da feat: M-9B — RouterModal real data + audit 403/404 fix
 - bf13403 feat: M-9A — real camera OCR confirmation + extract.py hardening
-- 3428c5c feat: M-8B — Master Light post-assessment graph refresh + live sync
-- 43761e4 fix: M-8A cleanup — stale comment, JSDoc, pnpm-workspace, live E2E test
-- 0e0b2f4 feat: M-7 — Master Light apex creation, E2E validation, stats exclusion
 
 Commits belum di-push: 0
 
