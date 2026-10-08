@@ -42,7 +42,7 @@ class Node(Base):
         String(16), nullable=False, default="knowledge", server_default="knowledge"
     )
     # M-5: master_light_unlocked — True when all prerequisite knowledge nodes
-    # are mastered (mastery_score >= 70). Set by check_and_unlock_dependents.
+    # are mastered (mastery_score >= 70). Set by check_master_light_unlock().
     master_light_unlocked: Mapped[bool] = mapped_column(
         nullable=False, default=False, server_default="0"
     )

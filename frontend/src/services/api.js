@@ -292,7 +292,7 @@ export const masterLightApi = {
    * POST /api/v1/master-light/evaluate
    * Evaluates user's answer and returns master_light_mastery score.
    * question_index: 0 | 1 | 2 (3-question session)
-   * Returns { ai_score, feedback, master_light_mastery, is_final, unlocked_new_nodes }
+   * Returns { ai_score, feedback, master_light_mastery, is_final, question_index }
    */
   evaluate: (nodeId, userAnswer, questionIndex = 0) =>
     api.post('/api/v1/master-light/evaluate', {
