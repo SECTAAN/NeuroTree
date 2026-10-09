@@ -16,11 +16,8 @@ import CyberpunkToolbar from './CyberpunkToolbar'
 import RouterModal      from '../router/RouterModal'
 import NoteModal        from '../notes/NoteModal'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
-<<<<<<< HEAD
 import { graphApi, activeSession } from '../../services/api'
 // mockProgressiveApi removed — no /expand endpoint exists yet (Phase F-2+)
-=======
->>>>>>> ab0b2a7e8bedbe6d3dacf74498dd4e6e9334580f
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
 // Returns { positions, depth } — depth map is preserved for progressive reveal.
