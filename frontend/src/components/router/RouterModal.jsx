@@ -26,20 +26,34 @@ import { graphApi } from '../../services/api'
 
 // ── Flashcard builder ─────────────────────────────────────────────────────────
 // Generates active-recall cards from real key_concepts arrays.
-// Each concept from source becomes one card; same for target.
+// Fallback: when key_concepts is empty (live NT-01 path), generate one card from
+// node content so the Flashcard tab is always usable.
 // Capped at 6 total cards so the panel stays usable.
-let _fcSeq = 0
 function buildFlashcards(sourceNode, targetNode) {
   const cards = []
+  let seq = 0
 
   function addConcepts(node, concepts) {
-    for (const concept of (concepts ?? [])) {
+    const list = Array.isArray(concepts) ? concepts.filter(Boolean) : []
+
+    if (list.length > 0) {
+      // Happy path: use real key_concepts
+      for (const concept of list) {
+        cards.push({
+          id:           `fc-${++seq}-${node.id}`,
+          front:        `Apa yang dimaksud dengan "${concept}" dalam konteks "${node.title}"?`,
+          back:         node.content
+            ? `${concept} adalah bagian dari "${node.title}". ${node.content.slice(0, 200).trimEnd()}…`
+            : `${concept} adalah salah satu konsep kunci dalam "${node.title}".`,
+          sourceNodeId: node.id,
+        })
+      }
+    } else if (node.content) {
+      // Fallback: no key_concepts but we have content — generate one content-based card
       cards.push({
-        id:           `fc-${++_fcSeq}-${node.id}`,
-        front:        `Apa yang dimaksud dengan "${concept}" dalam konteks "${node.title}"?`,
-        back:         node.content
-          ? `${concept} adalah bagian dari "${node.title}". ${node.content.slice(0, 200).trimEnd()}…`
-          : `${concept} adalah salah satu konsep kunci dalam "${node.title}".`,
+        id:           `fc-${++seq}-${node.id}-fallback`,
+        front:        `Jelaskan konsep utama dari "${node.title}" dengan kata-katamu sendiri!`,
+        back:         node.content.slice(0, 300).trimEnd() + (node.content.length > 300 ? '…' : ''),
         sourceNodeId: node.id,
       })
     }
