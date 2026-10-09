@@ -16,7 +16,7 @@ from app.core.exceptions import (
 )
 from app.db.database import engine, Base
 from app.models import Session, Node, Edge  # noqa: F401 – registers models with Base
-from app.api import material, quiz, career, extract
+from app.api import material, quiz, career, extract, master_light
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,7 +61,8 @@ app.add_exception_handler(Exception, internal_server_error_handler)
 app.include_router(material.router, prefix="/api/v1")
 app.include_router(quiz.router, prefix="/api/v1")
 app.include_router(career.router, prefix="/api/v1")
-app.include_router(extract.router, prefix="/api/v1")
+app.include_router(extract.router,       prefix="/api/v1")
+app.include_router(master_light.router,  prefix="/api/v1")
 
 
 # ── Health Checks ─────────────────────────────────────────────────────────────

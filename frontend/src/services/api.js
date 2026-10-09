@@ -94,7 +94,10 @@ api.interceptors.response.use(
       error.message ||
       'Sirkuit AI sedang mengalami gangguan sementara.'
     console.error('[NeuroTree API Error]', msg, error)
-    return Promise.reject(new Error(msg))
+    const err = new Error(msg)
+    // Preserve the HTTP status so callers can check err.status (e.g. 403 locked-node guard)
+    if (status) err.status = status
+    return Promise.reject(err)
   }
 )
 
@@ -193,95 +196,25 @@ export const careerApi = {
     api.post('/api/v1/career/pathway', { career_goal: careerGoal }),
 }
 
-// ── Mock Progressive Growth API (P4 — used until backend endpoint is ready) ───
-//
-// mockProgressiveApi.createTree(data)
-//   Simulates POST /api/v1/tree — returns a single root node to start the circuit.
-//   data: { treeName, learningGoal }
-//
-// mockProgressiveApi.expandNode(nodeId, existingNodeIds)
-//   Simulates POST /api/v1/node/:id/expand — given a node, returns 2-3 child
-//   nodes + the edges that connect them to the parent.
-//   existingNodeIds is passed so the mock can generate unique IDs each time.
-//
-// Both functions return a { data } wrapper to match Axios response shape,
-// so SkillTreeCanvas can swap to the real api call with zero refactoring.
-
-const EXPAND_TEMPLATES = {
-  default: [
-    { titleSuffix: 'Core Concepts',   masteryScore: 0, status: 'unlocked' },
-    { titleSuffix: 'Key Principles',  masteryScore: 0, status: 'unlocked' },
-    { titleSuffix: 'Practical Usage', masteryScore: 0, status: 'locked'   },
-  ],
-  'node-root': [
-    { titleSuffix: 'Fundamentals',    masteryScore: 0, status: 'unlocked' },
-    { titleSuffix: 'Advanced Topics', masteryScore: 0, status: 'locked'   },
-  ],
-}
-
-let _mockIdCounter = 100
-
-function makeMockId(prefix) {
-  return `${prefix}-${++_mockIdCounter}`
-}
-
-export const mockProgressiveApi = {
+export const masterLightApi = {
   /**
-   * createTree({ treeName, learningGoal })
-   * Returns: { data: { treeId, nodes: [rootNode], edges: [] } }
+   * POST /api/v1/master-light/generate
+   * Generates a Master Light assessment question for the given master_light node.
+   * Returns { node_id, question }
    */
-  createTree({ treeName, learningGoal }) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const rootId = makeMockId('node')
-        resolve({
-          data: {
-            treeId: makeMockId('tree'),
-            treeName,
-            learningGoal,
-            nodes: [
-              {
-                id:           rootId,
-                title:        treeName,
-                status:       'unlocked',
-                mastery_score: 0,
-              },
-            ],
-            edges: [],
-          },
-        })
-      }, 400) // simulate network delay
-    })
-  },
+  generate: (nodeId) =>
+    api.post('/api/v1/master-light/generate', { node_id: nodeId }),
 
   /**
-   * expandNode(nodeId, existingNodeIds)
-   * Returns: { data: { nodes: [...], edges: [...] } }
-   *
-   * Generates 2-3 child nodes seeded from the parent node's label.
-   * existingNodeIds prevents ID collisions across multiple expand calls.
+   * POST /api/v1/master-light/evaluate
+   * Evaluates user's answer and returns master_light_mastery score.
+   * question_index: 0 | 1 | 2 (3-question session)
+   * Returns { ai_score, feedback, master_light_mastery, is_final, question_index }
    */
-  expandNode(nodeId, parentLabel = '') {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const template =
-          EXPAND_TEMPLATES[nodeId] ?? EXPAND_TEMPLATES.default
-
-        const newNodes = template.map((t) => ({
-          id:           makeMockId('node'),
-          title:        parentLabel ? `${parentLabel}: ${t.titleSuffix}` : t.titleSuffix,
-          status:       t.status,
-          mastery_score: t.masteryScore,
-        }))
-
-        const newEdges = newNodes.map((child) => ({
-          source_id: nodeId,
-          target_id: child.id,
-          status:    child.status === 'locked' ? 'locked' : 'active',
-        }))
-
-        resolve({ data: { nodes: newNodes, edges: newEdges } })
-      }, 600) // simulate LangFlow latency
-    })
-  },
+  evaluate: (nodeId, userAnswer, questionIndex = 0) =>
+    api.post('/api/v1/master-light/evaluate', {
+      node_id:        nodeId,
+      user_answer:    userAnswer,
+      question_index: questionIndex,
+    }),
 }

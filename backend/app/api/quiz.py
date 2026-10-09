@@ -32,6 +32,7 @@ from app.services import langflow_service
 from app.services.mastery_service import (
     get_mastery_level,
     check_and_unlock_dependents,
+    check_master_light_unlock,
     calculate_session_mastery,
 )
 from app.core.exceptions import NodeNotFoundException
@@ -173,6 +174,9 @@ async def evaluate_answer(
             db.flush()
 
             newly_unlocked = check_and_unlock_dependents(node=node, db=db)
+            # M-6: after normal unlocks, check if all knowledge nodes are now
+            # mastered — if so, unlock the Master Light node for this session.
+            check_master_light_unlock(session_id=session_id, db=db)
             db.commit()
             db.refresh(node)
 
@@ -226,9 +230,10 @@ async def get_recommendations(
     from app.models.edge import Edge as EdgeModel
     from app.services.mastery_service import UNLOCK_THRESHOLD
 
+    # M-7: exclude master_light nodes from NT-04 recommendation input
     nodes = (
         db.query(Node)
-        .filter(Node.session_id == session_id)
+        .filter(Node.session_id == session_id, Node.node_type == "knowledge")
         .all()
     )
     edges = (

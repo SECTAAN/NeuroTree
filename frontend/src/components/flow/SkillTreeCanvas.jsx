@@ -10,13 +10,17 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import NeonLampNode     from './NeonLampNode'
+import MasterLightNode  from './MasterLightNode'
 import EnergyEdge       from './EnergyEdge'
 import CyberpunkToolbar from './CyberpunkToolbar'
 import RouterModal      from '../router/RouterModal'
 import NoteModal        from '../notes/NoteModal'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
+<<<<<<< HEAD
 import { graphApi, activeSession } from '../../services/api'
 // mockProgressiveApi removed — no /expand endpoint exists yet (Phase F-2+)
+=======
+>>>>>>> ab0b2a7e8bedbe6d3dacf74498dd4e6e9334580f
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
 // Returns { positions, depth } — depth map is preserved for progressive reveal.
@@ -60,7 +64,7 @@ function computeLayout(apiNodes, apiEdges) {
   return { positions, depth }
 }
 
-const NODE_TYPES = { neonLamp: NeonLampNode }
+const NODE_TYPES = { neonLamp: NeonLampNode, masterLight: MasterLightNode }
 const EDGE_TYPES = { energy:   EnergyEdge  }
 
 // ── Inner canvas — needs to be inside ReactFlowProvider to use useReactFlow ──
@@ -103,15 +107,18 @@ function Canvas({ graphData }) {
       .filter((n) => visibleIds.has(n.id))
       .map((n) => ({
         id:       n.id,
-        type:     'neonLamp',
+        type:     n.node_type === 'master_light' ? 'masterLight' : 'neonLamp',
         position: positions[n.id] ?? { x: 0, y: 0 },
         sourcePosition: 'top',
         targetPosition: 'bottom',
         data: {
-          label:         n.title,
-          status:        n.status,
-          mastery_score: n.mastery_score,
-          id:            n.id,
+          label:                 n.title,
+          status:                n.status,
+          mastery_score:         n.mastery_score,
+          id:                    n.id,
+          node_type:             n.node_type ?? 'knowledge',
+          master_light_unlocked: n.master_light_unlocked ?? false,
+          master_light_mastery:  n.master_light_mastery  ?? 0,
         },
       }))
 
@@ -181,8 +188,10 @@ function Canvas({ graphData }) {
             ...rfNode,
             data: {
               ...rfNode.data,
-              mastery_score: updated.mastery_score,
-              status:        updated.status,
+              mastery_score:         updated.mastery_score,
+              status:                updated.status,
+              master_light_unlocked: updated.master_light_unlocked ?? rfNode.data.master_light_unlocked,
+              master_light_mastery:  updated.master_light_mastery  ?? rfNode.data.master_light_mastery,
             },
           }
         })

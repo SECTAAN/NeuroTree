@@ -147,26 +147,53 @@ export default function SkillTree() {
   }, [treeName])
 
   // ── NT-04: fire after mastery update ─────────────────────────────────────
-  const fetchRecommendation = useCallback(() => {
+  // P1-5: fetchRecommendation accepts an optional fresh nodes array so the
+  // chip renders against up-to-date graph state instead of the stale closure.
+  // When freshNodes is provided it is written to graphData before the chip
+  // appears — eliminating the race between graph-refresh and recommendation.
+  const fetchRecommendation = useCallback((freshNodes) => {
     quizApi.recommend()
       .then(({ data }) => {
         // Only show chip if there is a meaningful recommendation
         if (data?.target_chunk_id || data?.reason) {
+          // If we have fresh graph data, apply it before showing the chip so
+          // the "Go →" button never renders against a stale node list.
+          if (freshNodes) {
+            setGraphData((prev) => ({ ...prev, nodes: freshNodes }))
+          }
           setRecommendation(data)
         }
       })
       .catch(() => { /* silent — chip simply doesn't appear */ })
-  }, [])
+  }, [setGraphData])
 
   /**
-   * Called by QuizModal after a successful evaluation.
-   * Runs the standard mastery update AND fires NT-04 recommendation.
+   * Called by QuizModal after a successful evaluation (Q2 is_final).
+   *
+   * P1-5 fix — sequencing:
+   *   1. Optimistic mastery patch (immediate visual feedback via updateNodeMastery).
+   *   2. Authoritative graph refresh (fetchGraph) — resolves fresh node list.
+   *   3. NT-04 recommendation fetch — called with the fresh node list so the
+   *      chip never sees stale unlock/lock state.
+   *
+   * The recommendation is only shown after the graph is confirmed fresh,
+   * preventing the chip's "Go →" button from being disabled for a newly-
+   * unlocked target node that hasn't yet appeared in the local state.
    */
   function handleMasteryUpdate(nodeId, newScore, unlockedIds = []) {
+    // Step 1: optimistic local patch + AppContext fire-and-forget (for edge visuals)
     updateNodeMastery(nodeId, newScore, unlockedIds)
-    // Clear stale recommendation then fetch fresh one
+    // Step 2+3: clear stale chip, refresh graph, then fire recommendation
     setRecommendation(null)
-    fetchRecommendation()
+    graphApi.fetchGraph()
+      .then(({ data }) => {
+        setGraphData(data)
+        fetchRecommendation(data.nodes)
+      })
+      .catch(() => {
+        // Graph refresh failed — still try the recommendation with current state
+        fetchRecommendation()
+      })
   }
 
   // Navigation to recommended node's quiz

@@ -127,7 +127,7 @@ async def ingest_material(
         db.query(Node).filter(Node.session_id == session_id).delete()
         db.flush()
 
-        # 4. Persist nodes — first node is unlocked by default (entry point)
+        # 4. Persist knowledge nodes — first node is unlocked by default (entry point)
         for idx, chunk in enumerate(graph.nodes):
             node = Node(
                 id=scoped(chunk.id),
@@ -137,6 +137,7 @@ async def ingest_material(
                 key_concepts=chunk.key_concepts,
                 status="unlocked" if idx == 0 else "locked",
                 mastery_score=0.0,
+                node_type="knowledge",
             )
             db.add(node)
 
@@ -150,6 +151,46 @@ async def ingest_material(
                 relationship_type=edge_data.get("relationship", "prerequisite"),
             )
             db.add(edge)
+
+        # 6. M-7: Create the Master Light apex node — one per session.
+        #    node_type='master_light'; master_light_unlocked=False until all
+        #    knowledge nodes reach mastery >= 70.
+        ml_node_id = f"{prefix}_master_light"
+        ml_node = Node(
+            id=ml_node_id,
+            session_id=session_id,
+            title=body.tree_name.strip() or "Master Light",
+            content=(
+                "This is the Master Light — the apex of your knowledge circuit. "
+                "Complete all knowledge nodes to unlock the final assessment."
+            ),
+            key_concepts=[],
+            status="locked",
+            mastery_score=0.0,
+            node_type="master_light",
+            master_light_unlocked=False,
+            master_light_mastery=0.0,
+            ml_session_scores=[],
+        )
+        db.add(ml_node)
+
+        # Edges: every leaf knowledge node (no outgoing edges) points to Master Light.
+        # A leaf is any knowledge node that is NOT a source in any existing edge.
+        source_ids = {scoped(e["source_id"]) for e in graph.edges}
+        all_knowledge_ids = {scoped(c.id) for c in graph.nodes}
+        leaf_ids = all_knowledge_ids - source_ids
+        # Fallback: if every node has outgoing edges (chain), use the last node only
+        if not leaf_ids:
+            leaf_ids = {scoped(graph.nodes[-1].id)} if graph.nodes else set()
+
+        for leaf_id in leaf_ids:
+            db.add(Edge(
+                id=str(uuid.uuid4()),
+                session_id=session_id,
+                source_id=leaf_id,
+                target_id=ml_node_id,
+                relationship_type="prerequisite",
+            ))
 
         db.commit()
 
@@ -165,8 +206,9 @@ async def ingest_material(
     return {
         "message": "Graf pengetahuan berhasil dibuat.",
         "session_id": session_id,
-        "nodes_created": len(graph.nodes),
+        "nodes_created": len(graph.nodes),   # knowledge nodes only
         "edges_created": len(graph.edges),
+        "master_light_id": ml_node_id,
     }
 
 
@@ -201,10 +243,13 @@ def get_visual_graph(
         "revealed_depth": revealed_depth,
         "nodes": [
             {
-                "id": n.id,
-                "title": n.title,
-                "status": n.status,
-                "mastery_score": n.mastery_score,
+                "id":                    n.id,
+                "title":                 n.title,
+                "status":                n.status,
+                "mastery_score":         n.mastery_score,
+                "node_type":             getattr(n, "node_type", "knowledge") or "knowledge",
+                "master_light_unlocked": getattr(n, "master_light_unlocked", False) or False,
+                "master_light_mastery":  getattr(n, "master_light_mastery", 0.0) or 0.0,
             }
             for n in nodes
         ],
@@ -299,12 +344,14 @@ def get_sessions(
             .filter(Node.session_id == session_row.uuid)
             .all()
         )
-        if not nodes:
+        # M-7: exclude master_light nodes from dashboard stats
+        knowledge_nodes = [n for n in nodes if getattr(n, "node_type", "knowledge") == "knowledge"]
+        if not knowledge_nodes:
             continue
 
-        total_nodes = len(nodes)
-        mastered    = [n for n in nodes if n.mastery_score >= 70.0]
-        avg_mastery = round(sum(n.mastery_score for n in nodes) / total_nodes, 1)
+        total_nodes = len(knowledge_nodes)
+        mastered    = [n for n in knowledge_nodes if n.mastery_score >= 70.0]
+        avg_mastery = round(sum(n.mastery_score for n in knowledge_nodes) / total_nodes, 1)
 
         created = session_row.created_at
         if created.tzinfo is None:

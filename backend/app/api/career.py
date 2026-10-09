@@ -66,9 +66,10 @@ async def get_career_pathway(
         weak      — status == 'unlocked' AND 0 < mastery_score < UNLOCK_THRESHOLD
         missing   — status == 'locked' OR mastery_score == 0
     """
+    # M-7: exclude master_light nodes — they have a separate mastery track
     nodes = (
         db.query(Node)
-        .filter(Node.session_id == session_id)
+        .filter(Node.session_id == session_id, Node.node_type == "knowledge")
         .all()
     )
 
