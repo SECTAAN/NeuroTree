@@ -456,18 +456,18 @@ html.dark .new-tree-card:hover {
   position: absolute;
   pointer-events: none;
   opacity: calc(var(--mastery) * 0.65);
-  background: radial-gradient(circle, rgba(219, 98, 113, 0.30) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(200, 150, 50, 0.30) 0%, transparent 65%);
   animation: glowPulse 2.8s ease-in-out infinite;
 }
 .lamp-mastered .lamp-halo {
-  background: radial-gradient(circle, rgba(53, 78, 71, 0.45) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(220, 165, 30, 0.55) 0%, transparent 65%);
 }
 html.dark .lamp-halo {
-  background: radial-gradient(circle, rgba(42, 131, 95, 0.35) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(210, 155, 40, 0.35) 0%, transparent 65%);
   opacity: calc(var(--mastery) * 0.70);
 }
 html.dark .lamp-mastered .lamp-halo {
-  background: radial-gradient(circle, rgba(139, 187, 146, 0.45) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(235, 185, 60, 0.50) 0%, transparent 65%);
 }
 
 .lamp-locked   { opacity: 0.28; filter: grayscale(0.5); }

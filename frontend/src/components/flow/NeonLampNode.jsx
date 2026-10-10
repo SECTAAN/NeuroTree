@@ -47,36 +47,48 @@ export default function NeonLampNode({ data, selected }) {
     background: 'var(--nt-bg, #faf2e3)',
   }
 
-  // ── Colour palette driven by mastery — warm organic tones ────────────────
-  // Locked → muted grey-green  |  low → soft teal  |  mastered → rich primary green
+  // ── Colour palette driven by mastery — warm golden ramp ──────────────────
+  // Locked       → muted grey-green (no glow)
+  // Low  (0–39)  → faint amber tint
+  // Mid  (40–69) → warm amber / orange-yellow
+  // Bright (70+) → rich gold / yellow
+  // Mastered     → bright gold with strong glow
   const glassColor = isLocked
     ? 'rgba(100,120,110,0.18)'
-    : mastery >= 0.8
-      ? `rgba(53,78,71,${0.30 + mastery * 0.40})`   // deep green at high mastery
-      : `rgba(78,114,103,${0.18 + mastery * 0.40})`  // mid teal at lower mastery
+    : rawMastery >= 0.70
+      ? `rgba(210,160,40,${0.35 + rawMastery * 0.45})`   // gold at bright/mastered
+      : rawMastery >= 0.40
+        ? `rgba(200,140,50,${0.25 + rawMastery * 0.40})`  // amber at mid
+        : `rgba(160,130,80,${0.18 + rawMastery * 0.40})`  // pale warm at low
 
   const glassHighlight = isLocked
     ? 'rgba(255,255,255,0.05)'
-    : mastery >= 0.8
-      ? `rgba(139,187,146,${0.35 + mastery * 0.25})`
-      : `rgba(200,230,220,${0.20 + mastery * 0.30})`
+    : rawMastery >= 0.70
+      ? `rgba(255,230,120,${0.45 + rawMastery * 0.30})`   // bright yellow highlight
+      : rawMastery >= 0.40
+        ? `rgba(240,200,100,${0.30 + rawMastery * 0.25})`  // warm amber highlight
+        : `rgba(220,190,140,${0.18 + rawMastery * 0.25})`  // pale warm highlight
 
   const filamentColor = isLocked
     ? 'rgba(53,78,71,0.12)'
-    : mastery >= 0.8
-      ? `rgba(53,78,71,${0.6 + mastery * 0.4})`
-      : `rgba(78,114,103,${0.4 + mastery * 0.5})`
+    : rawMastery >= 0.70
+      ? `rgba(200,140,30,${0.70 + rawMastery * 0.30})`    // bright gold filament
+      : rawMastery >= 0.40
+        ? `rgba(180,120,40,${0.55 + rawMastery * 0.35})`   // amber filament
+        : `rgba(140,110,60,${0.40 + rawMastery * 0.45})`   // dim warm filament
 
-  // drop-shadow glow: warm teal for normal, rich green for mastered
-  const shadowColor = mastery >= 0.8
-    ? `rgba(53,78,71,${mastery * 0.80})`
-    : `rgba(78,114,103,${mastery * 0.80})`
+  // drop-shadow glow: amber/gold tones scale with mastery
+  const shadowColor = rawMastery >= 0.70
+    ? `rgba(220,160,30,${rawMastery * 0.85})`    // gold glow at bright/mastered
+    : rawMastery >= 0.40
+      ? `rgba(200,140,50,${rawMastery * 0.75})`   // amber glow at mid
+      : `rgba(160,130,70,${rawMastery * 0.60})`   // faint warm glow at low
 
   const glowFilter = isLocked
     ? 'none'
     : `drop-shadow(0 0 ${3 + mastery * 8}px ${shadowColor}) drop-shadow(0 0 ${1 + mastery * 4}px ${shadowColor})`
 
-  const baseStroke = isLocked ? 'rgba(100,120,110,0.30)' : 'rgba(78,114,103,0.45)'
+  const baseStroke = isLocked ? 'rgba(100,120,110,0.30)' : 'rgba(140,110,60,0.55)'
 
   return (
     <>
@@ -114,7 +126,7 @@ export default function NeonLampNode({ data, selected }) {
             style={{
               inset: '-6px',
               borderRadius: '50%',
-              border: `1.5px solid ${mastery >= 0.8 ? 'rgba(53,78,71,0.80)' : 'rgba(78,114,103,0.75)'}`,
+              border: `1.5px solid ${rawMastery >= 0.70 ? 'rgba(210,160,40,0.80)' : 'rgba(160,130,70,0.65)'}`,
               boxShadow: `0 0 8px ${shadowColor}`,
             }}
           />
@@ -183,9 +195,9 @@ export default function NeonLampNode({ data, selected }) {
                 C 23 9.5 19.5 5 14 5
                 Z
               "
-              fill={mastery >= 0.8
-                ? `rgba(53,78,71,${mastery * 0.28})`
-                : `rgba(78,114,103,${mastery * 0.22})`}
+              fill={rawMastery >= 0.70
+                ? `rgba(210,160,40,${mastery * 0.28})`
+                : `rgba(180,130,60,${mastery * 0.22})`}
             />
           )}
 
