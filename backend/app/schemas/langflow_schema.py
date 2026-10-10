@@ -152,6 +152,11 @@ class NT05Output(BaseModel):
     NT-05 returns:  strong_concepts, weak_concepts, knowledge_gaps,
                     missing_prerequisites, recommended_path, reasoning,
                     estimated_completion_days
+
+    tree_career_match (0.0–1.0): fraction of the session's tree nodes that are
+        relevant to the requested career.  Set by the MOCK path; LIVE path
+        defaults to 1.0 (let NT-05 LLM decide).  Frontend uses this to render
+        a mismatch notice when the value is 0.
     """
     target_goal: str = ""
     strong_concepts: list[str] = Field(default_factory=list)
@@ -161,3 +166,9 @@ class NT05Output(BaseModel):
     recommended_path: list[NT05PathStep] = Field(default_factory=list)
     estimated_completion_days: int = 0
     reasoning: str = ""
+    # tree_career_match values:
+    #   -1.0 : career not in reference database (cannot compute)
+    #    0.0 : known career, tree has zero relevant nodes (mismatch)
+    #    0–1 : fraction of tree nodes relevant to the career
+    #    1.0 : default for LIVE path (let NT-05 LLM decide)
+    tree_career_match: float = 1.0

@@ -3,9 +3,9 @@ LangFlow Service — AI pipeline orchestrator.
 
 Each public function has two paths:
   LIVE path  — calls the real LangFlow flow via langflow_client.run_flow().
-               Active when settings.USE_MOCK_AI is False (default).
+                Active when settings.USE_MOCK_AI is False (default).
   MOCK path  — returns pre-built static data.
-               Active when settings.USE_MOCK_AI is True (demo / offline guard).
+                Active when settings.USE_MOCK_AI is True (demo / offline guard).
 
 All mock data is preserved intact so the application remains fully functional
 without a LangFlow connection.
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re as _re
 
 from app.core.config import get_settings
 from app.schemas.langflow_schema import (
@@ -513,23 +514,35 @@ async def get_knowledge_gap_pathway(
     mastered_chunks: list[dict],
     weak_chunks: list[dict],
     missing_chunks: list[dict],
+    session_id: str = "",
 ) -> NT05Output:
     """
     NT-05: Analyse the user's global knowledge profile and generate a
     personalised learning pathway toward a career goal.
 
     MOCK path (USE_MOCK_AI=True):
-        Returns a static pathway with up to 3 missing/weak chunks prioritised.
+        Returns a career-aware pathway.  Chunks whose titles contain keywords
+        matching the requested career domain are surfaced first in the
+        recommended_path and knowledge_gaps.  knowledge_gaps are labelled with
+        the target career goal so they are visually distinct per Panel A/B call.
 
     LIVE path (USE_MOCK_AI=False):
-        Sends the full profile JSON to NT-05 and parses its pathway output.
+        Sends the full profile JSON to NT-05 in the field names the NT-05
+        Prompt Template expects:
+          - target_goal  (was "career_goal" — Bug 3 fix)
+          - all_chunks   (union of all chunks — gives NT-05 complete context)
+          - user_id      (session_id for NT-05 personalisation)
+        This aligns the backend payload with the NT-05 prompt template which
+        declares {profile_input} containing target_goal / all_chunks / user_id.
 
-    Input shape sent to NT-05:
+    Input shape sent to NT-05 (LIVE):
         {
-          "career_goal":      "Network Engineer",
+          "target_goal":      "Network Engineer",     ← was career_goal
+          "user_id":          "<session_id>",
           "mastered_chunks":  [{"id": ..., "title": ..., "mastery_score": ...}],
           "weak_chunks":      [{"id": ..., "title": ..., "mastery_score": ...}],
-          "missing_chunks":   [{"id": ..., "title": ...}]
+          "missing_chunks":   [{"id": ..., "title": ...}],
+          "all_chunks":       [...mastered + weak + missing combined...]
         }
     """
     if get_settings().USE_MOCK_AI:
@@ -541,12 +554,34 @@ async def get_knowledge_gap_pathway(
     settings = get_settings()
 
     import json as _json
+
+    # all_chunks = union of every chunk the session has, preserving order:
+    # mastered → weak → missing (gives NT-05 the complete knowledge graph context)
+    all_chunks = mastered_chunks + weak_chunks + [
+        {"id": c["id"], "title": c["title"], "mastery_score": 0} for c in missing_chunks
+    ]
+
+    # career_required_skills: structured competency list for the target career.
+    # Injected so NT-05's LLM can distinguish "what the career needs" from
+    # "what's in the tree", enabling it to produce career-specific gaps even
+    # when the tree content is unrelated to the target career.
+    # Imported late to avoid circular dependency — _CAREER_REQUIRED_SKILLS is
+    # defined later in this same module.
+    career_required_skills = _CAREER_REQUIRED_SKILLS.get(career_goal, _DEFAULT_REQUIRED_SKILLS)
+
     payload = _json.dumps(
         {
-            "career_goal":     career_goal,
-            "mastered_chunks": mastered_chunks,
-            "weak_chunks":     weak_chunks,
-            "missing_chunks":  missing_chunks,
+            "target_goal":            career_goal,       # field name NT-05 prompt expects
+            "user_id":                session_id or "",
+            "mastered_chunks":        mastered_chunks,
+            "weak_chunks":            weak_chunks,
+            "missing_chunks":         missing_chunks,
+            "all_chunks":             all_chunks,
+            # career_required_skills helps NT-05 evaluate the gap between the tree
+            # and the actual career, not just summarise the tree.
+            "career_required_skills": career_required_skills,
+            # learning_history not tracked yet — pass empty list so NT-05 won't error
+            "learning_history": [],
         },
         ensure_ascii=False,
     )
@@ -571,6 +606,248 @@ async def get_knowledge_gap_pathway(
     return nt05
 
 
+# ── Career-domain keyword lookup ──────────────────────────────────────────────
+# Two lists per career:
+#   substring_kws — long / unambiguous terms; matched anywhere in title
+#   word_kws      — short or easily mis-matched terms; matched as whole words
+#                   using \b regex boundaries
+#
+# This mirrors the two-list approach in _DOMAIN_RULES (career.py) to prevent
+# false hits like "ip" inside "deskriptif" or "ai" inside "visualisasi".
+#
+# Also included: _CAREER_REQUIRED_SKILLS — a short human-readable list of
+# competencies that define each career.  Used to:
+#   1. Detect when a tree's content is mismatched with the target career.
+#   2. Provide NT-05 (LIVE) with structured career context it might not infer.
+#   3. Populate knowledge_gaps with meaningful entries when zero tree nodes
+#      match the career (instead of showing all DS nodes for "Network Engineer").
+
+_CAREER_KEYWORDS: dict[str, tuple[list[str], list[str]]] = {
+    # (substring_kws, word_kws)
+    "Network Engineer": (
+        ["network", "routing", "switching", "tcp/ip", "ip address", "vlan",
+         "subnet", "firewall", "vpn", "dns", "dhcp", "bandwidth", "topology"],
+        ["tcp", "udp", "wan", "lan"],
+    ),
+    "Network Administrator": (
+        ["network", "routing", "switching", "ip address", "vlan", "dns", "dhcp",
+         "network configuration", "network monitoring"],
+        ["tcp", "wan", "lan"],
+    ),
+    "Cybersecurity Analyst": (
+        ["security", "cybersecurity", "firewall", "intrusion", "malware",
+         "encryption", "siem", "forensic", "penetration", "threat", "vulnerability"],
+        ["ids", "ips"],
+    ),
+    "Network Security Engineer": (
+        ["network", "security", "firewall", "vpn", "intrusion", "encryption",
+         "routing", "switching"],
+        ["ids", "ips", "lan", "wan"],
+    ),
+    "Machine Learning Engineer": (
+        ["machine learning", "deep learning", "neural network", "neural",
+         "natural language processing", "regression", "classification",
+         "model training", "feature engineering", "dataset"],
+        ["nlp", "ai"],
+    ),
+    "AI Engineer": (
+        ["artificial intelligence", "machine learning", "deep learning",
+         "neural network", "natural language processing", "computer vision",
+         "model deployment"],
+        ["ai", "nlp"],
+    ),
+    "Data Scientist": (
+        ["data science", "machine learning", "statistics", "regression",
+         "classification", "analytics", "dataset", "visualization",
+         "exploratory", "hypothesis", "model evaluation"],
+        ["sql", "etl"],
+    ),
+    "Data Engineer": (
+        ["data pipeline", "data warehouse", "data lake", "etl",
+         "spark", "hadoop", "kafka", "airflow", "database",
+         "data ingestion", "data processing"],
+        ["sql", "etl"],
+    ),
+    "Data Analyst": (
+        ["data analysis", "analytics", "visualization", "dashboard",
+         "tableau", "power bi", "reporting", "business intelligence"],
+        ["sql"],
+    ),
+    "Cloud Engineer": (
+        ["cloud", "aws", "azure", "gcp", "kubernetes", "docker",
+         "container", "terraform", "infrastructure", "serverless",
+         "cloud architecture"],
+        [],
+    ),
+    "DevOps Engineer": (
+        ["devops", "ci/cd", "continuous integration", "kubernetes", "docker",
+         "automation", "pipeline", "terraform", "monitoring", "deployment"],
+        [],
+    ),
+    "Full-Stack Web Developer": (
+        ["web development", "html", "css", "javascript", "react", "vue",
+         "angular", "rest", "microservice", "frontend", "backend"],
+        ["web", "api", "node"],
+    ),
+    "Frontend Engineer": (
+        ["html", "css", "javascript", "react", "vue", "angular",
+         "responsive design", "ui", "frontend"],
+        ["web"],
+    ),
+    "Backend Engineer": (
+        ["backend", "server", "database", "rest", "microservice",
+         "authentication", "authorization"],
+        ["api", "node"],
+    ),
+    "Software Engineer": (
+        ["software", "programming", "algorithm", "data structure",
+         "design pattern", "object-oriented", "software development"],
+        ["oop"],
+    ),
+    "Mobile App Developer": (
+        ["mobile", "android", "ios", "flutter", "kotlin", "swift",
+         "react native", "app development"],
+        [],
+    ),
+    "Systems Programmer": (
+        ["operating system", "kernel", "linux", "unix", "system programming",
+         "embedded", "firmware", "driver"],
+        [],
+    ),
+    "Embedded Systems Engineer": (
+        ["embedded", "firmware", "microcontroller", "real-time", "hardware",
+         "driver", "low-level"],
+        [],
+    ),
+    "Linux Engineer": (
+        ["linux", "unix", "shell", "kernel", "system administration",
+         "bash", "operating system"],
+        [],
+    ),
+    "IT Project Manager": (
+        ["project management", "agile", "scrum", "kanban", "risk management",
+         "stakeholder", "waterfall", "sprint", "delivery"],
+        [],
+    ),
+    "Cloud Architect": (
+        ["cloud", "aws", "azure", "gcp", "cloud architecture", "infrastructure",
+         "scalability", "reliability", "terraform"],
+        [],
+    ),
+    "Site Reliability Engineer": (
+        ["reliability", "sre", "monitoring", "observability", "incident",
+         "kubernetes", "docker", "automation"],
+        [],
+    ),
+    "MLOps Engineer": (
+        ["mlops", "model deployment", "model monitoring", "pipeline",
+         "machine learning", "ci/cd", "docker", "kubernetes"],
+        [],
+    ),
+    "Business Intelligence Developer": (
+        ["business intelligence", "data warehouse", "tableau", "power bi",
+         "reporting", "dashboard", "analytics", "etl"],
+        ["sql"],
+    ),
+    "Information Security Manager": (
+        ["security", "cybersecurity", "risk management", "compliance",
+         "policy", "audit", "governance", "information security"],
+        ["ids", "ips"],
+    ),
+    "Penetration Tester": (
+        ["penetration", "ethical hacking", "vulnerability", "exploit",
+         "security testing", "malware analysis", "forensic"],
+        [],
+    ),
+    "Cloud Infrastructure Engineer": (
+        ["cloud", "infrastructure", "aws", "azure", "gcp", "terraform",
+         "kubernetes", "docker", "networking", "routing"],
+        [],
+    ),
+    "Scrum Master": (
+        ["agile", "scrum", "sprint", "retrospective", "backlog",
+         "kanban", "team facilitation"],
+        [],
+    ),
+    "Product Manager": (
+        ["product management", "roadmap", "stakeholder", "user story",
+         "requirements", "agile", "sprint"],
+        [],
+    ),
+}
+
+# Short human-readable required competency list per career.
+# Used when tree content has zero relevance to the target career to provide
+# honest "what you'd need to learn" output instead of echoing tree gaps.
+_CAREER_REQUIRED_SKILLS: dict[str, list[str]] = {
+    "Network Engineer":          ["Network Topologies", "IP Addressing & Subnetting", "Routing & Switching", "TCP/IP Protocols", "Firewall & VPN", "DNS & DHCP"],
+    "Network Administrator":     ["Network Configuration", "IP Addressing", "DNS & DHCP", "Routing & Switching", "Network Monitoring"],
+    "Cybersecurity Analyst":     ["Threat Analysis", "Firewall Management", "Intrusion Detection", "Malware Analysis", "Encryption", "SIEM"],
+    "Network Security Engineer": ["Network Security", "Firewall Configuration", "VPN", "IDS/IPS", "Routing & Switching"],
+    "Machine Learning Engineer": ["Machine Learning Algorithms", "Deep Learning", "Model Training", "Feature Engineering", "Python for ML"],
+    "AI Engineer":               ["Artificial Intelligence", "Machine Learning", "Deep Learning", "NLP", "Model Deployment"],
+    "Data Scientist":            ["Statistics", "Machine Learning", "Data Analysis", "Data Visualization", "Python/R", "Hypothesis Testing"],
+    "Data Engineer":             ["ETL Pipelines", "Data Warehousing", "SQL", "Spark/Hadoop", "Data Modeling"],
+    "Data Analyst":              ["SQL", "Data Visualization", "Statistical Analysis", "Dashboard (Tableau/Power BI)", "Business Intelligence"],
+    "Cloud Engineer":            ["AWS/Azure/GCP", "Cloud Architecture", "Kubernetes", "Docker", "Terraform", "Serverless"],
+    "DevOps Engineer":           ["CI/CD Pipelines", "Docker & Kubernetes", "Infrastructure as Code", "Monitoring", "Automation"],
+    "Full-Stack Web Developer":  ["HTML/CSS", "JavaScript", "React/Vue/Angular", "REST APIs", "Backend Frameworks", "Databases"],
+    "Frontend Engineer":         ["HTML/CSS", "JavaScript", "React or Vue", "Responsive Design", "Browser APIs"],
+    "Backend Engineer":          ["Server-Side Languages", "REST APIs", "Database Design", "Authentication", "Microservices"],
+    "Software Engineer":         ["Algorithms & Data Structures", "Object-Oriented Design", "Design Patterns", "Testing", "Version Control"],
+    "Mobile App Developer":      ["Android or iOS Development", "Flutter or React Native", "Mobile UX", "REST APIs", "App Store Deployment"],
+    "Systems Programmer":        ["Operating Systems", "Linux/Unix", "Kernel Programming", "Embedded Systems", "C/C++"],
+    "IT Project Manager":        ["Project Management", "Agile/Scrum", "Risk Management", "Stakeholder Communication", "Delivery Planning"],
+    "Scrum Master":              ["Scrum Framework", "Agile Principles", "Sprint Planning", "Retrospectives", "Team Facilitation"],
+    "MLOps Engineer":            ["ML Pipeline Automation", "Model Deployment", "Docker/Kubernetes", "CI/CD for ML", "Monitoring"],
+    "Business Intelligence Developer": ["SQL", "ETL", "Data Warehousing", "Tableau/Power BI", "Reporting", "Analytics"],
+    "Cloud Architect":           ["Cloud Design Principles", "Multi-Region Architecture", "AWS/Azure/GCP", "Security & Compliance", "Cost Optimization"],
+    "Site Reliability Engineer": ["SRE Practices", "Monitoring & Observability", "Incident Response", "Kubernetes", "Automation"],
+    "Information Security Manager": ["Security Governance", "Risk Management", "Compliance", "Security Auditing", "Policy Development"],
+    "Penetration Tester":        ["Ethical Hacking", "Vulnerability Assessment", "Exploit Development", "Security Testing", "Forensics"],
+}
+
+# Sentinel: _career_relevance_score returns this when the career is not registered.
+# It means "unknown" — the tree-career relevance cannot be computed accurately.
+_CAREER_UNKNOWN_SCORE = -1
+
+# Default keywords and skills for careers NOT in _CAREER_KEYWORDS / _CAREER_REQUIRED_SKILLS.
+# These are IT-generic and only make sense when the user types an IT/tech-adjacent career.
+# For truly non-IT careers (Financial Analyst, Agronomist, etc.) the defaults do NOT apply —
+# instead the mock reports "career not in our reference database" honestly.
+_DEFAULT_CAREER_KEYWORDS_ENTRY: tuple[list[str], list[str]] = (
+    [],  # no substring keywords for unknown careers
+    [],  # no word keywords for unknown careers
+)
+_DEFAULT_REQUIRED_SKILLS: list[str] = []  # empty means "not in reference database"
+
+
+def _career_relevance_score(chunk_title: str, career_goal: str) -> int:
+    """
+    Returns the number of career-domain keywords found in ``chunk_title``.
+    Higher score = more relevant to the requested career.
+
+    Returns ``_CAREER_UNKNOWN_SCORE`` (-1) when ``career_goal`` is not in
+    ``_CAREER_KEYWORDS``.  Callers must check for this sentinel before treating
+    the score as a relevance signal.  Returning -1 prevents the mock from
+    claiming "tree_career_match=0" (mismatch) when the career simply isn't
+    registered — these are two different situations.
+
+    Uses word-boundary matching (\b) for short/ambiguous terms to prevent
+    false hits like "ip" matching inside "deskriptif", or "ai" inside
+    "visualisasi".  Long, unambiguous terms still use plain substring matching.
+    """
+    if career_goal not in _CAREER_KEYWORDS:
+        return _CAREER_UNKNOWN_SCORE
+    title_lower = chunk_title.lower()
+    sub_kws, word_kws = _CAREER_KEYWORDS[career_goal]
+    score = sum(1 for kw in sub_kws if kw in title_lower)
+    for kw in word_kws:
+        if _re.search(r"\b" + _re.escape(kw) + r"\b", title_lower):
+            score += 1
+    return score
+
+
 def _mock_knowledge_gap_pathway(
     career_goal: str,
     mastered_chunks: list[dict],
@@ -578,36 +855,172 @@ def _mock_knowledge_gap_pathway(
     missing_chunks: list[dict],
 ) -> NT05Output:
     """
-    Mock NT-05 pathway: prioritise weak chunks first, then missing chunks.
-    Returns up to 5 path steps.
+    Mock NT-05 pathway -- career-aware, separation-enforced, honest about limits (M-18).
+
+    Three distinct cases:
+
+    Case 1 -- UNKNOWN CAREER (not in _CAREER_KEYWORDS):
+        career_goal is a valid career name the system does not recognise yet.
+        e.g. "Financial Analyst", "Agronomist", "Product Designer"
+        tree_career_match = -1.0  (sentinel: "not computable")
+        knowledge_gaps = []  (cannot determine without reference data)
+        recommended_path = all weak+missing tree nodes (user's actual content)
+        reasoning = honest "career not in our reference DB" message
+
+    Case 2 -- KNOWN CAREER, tree is relevant (match > 0):
+        knowledge_gaps = career-required skills the tree does not cover yet
+        recommended_path = career-relevant weak/missing nodes (filtered)
+        tree_career_match in (0, 1]
+
+    Case 3 -- KNOWN CAREER, tree is mismatched (match == 0):
+        knowledge_gaps = canonical required skills from _CAREER_REQUIRED_SKILLS
+        recommended_path = []  (no relevant tree nodes to step through)
+        tree_career_match = 0.0
+
+    In all cases:
+    - strong_concepts = mastered tree nodes (factual, not career-filtered)
+    - weak_concepts   = weak tree nodes (factual, not career-filtered)
+    - missing_prerequisites = ALL missing tree nodes (structural fact)
     """
     from app.schemas.langflow_schema import NT05PathStep
 
     strong_titles  = [c.get("title", c["id"]) for c in mastered_chunks]
     weak_titles    = [c.get("title", c["id"]) for c in weak_chunks]
-    missing_titles = [c.get("title", c["id"]) for c in missing_chunks]
+    all_chunks     = mastered_chunks + weak_chunks + missing_chunks
+    total_chunks   = len(all_chunks)
 
-    gaps = weak_titles + missing_titles
+    career_is_known = career_goal in _CAREER_KEYWORDS
 
-    path_items = list(weak_chunks) + list(missing_chunks)
+    # Case 1: career not in our keyword database
+    if not career_is_known:
+        # We cannot compute relevance, so we do not claim mismatch.
+        # Show all weak+missing nodes as the recommended path.
+        path_items = weak_chunks + missing_chunks
+        steps = [
+            NT05PathStep(
+                step=i,
+                chunk_id=c["id"],
+                chunk_title=c.get("title", c["id"]),
+                reason=(
+                    f"Topik dari pohon belajar Anda yang belum dikuasai. "
+                    f"Relevansinya dengan karir '{career_goal}' tidak dapat dinilai otomatis."
+                ),
+            )
+            for i, c in enumerate(path_items[:5], start=1)
+        ]
+        if total_chunks == 0:
+            reasoning = (
+                f"Belum ada topik dalam pohon belajar ini. "
+                f"Unggah materi yang relevan untuk karir '{career_goal}'."
+            )
+        else:
+            reasoning = (
+                f"Karir '{career_goal}' belum ada dalam basis data referensi kami, "
+                f"sehingga analisis gap otomatis tidak dapat dilakukan. "
+                f"Hasil di atas hanya menampilkan topik dari pohon belajar aktif Anda. "
+                f"Untuk analisis yang lebih mendalam, gunakan mode LIVE (NT-05 AI)."
+            )
+        return NT05Output(
+            target_goal=career_goal,
+            strong_concepts=strong_titles,
+            weak_concepts=weak_titles,
+            knowledge_gaps=[],
+            missing_prerequisites=[c.get("title", c["id"]) for c in missing_chunks],
+            recommended_path=steps,
+            estimated_completion_days=len(steps),
+            reasoning=reasoning,
+            tree_career_match=-1.0,
+        )
+
+    # Cases 2 & 3: known career
+    def _score(chunk: dict) -> int:
+        s = _career_relevance_score(chunk.get("title", chunk["id"]), career_goal)
+        return s if s != _CAREER_UNKNOWN_SCORE else 0
+
+    scored_weak    = sorted(weak_chunks,    key=_score, reverse=True)
+    scored_missing = sorted(missing_chunks, key=_score, reverse=True)
+
+    relevant_weak    = [c for c in scored_weak    if _score(c) > 0]
+    relevant_missing = [c for c in scored_missing if _score(c) > 0]
+    relevant_all     = sum(1 for c in all_chunks if _score(c) > 0)
+
+    tree_career_match = round(relevant_all / total_chunks, 2) if total_chunks > 0 else 0.0
+
+    required_skills = _CAREER_REQUIRED_SKILLS.get(career_goal, [])
+
+    if relevant_all > 0:
+        # Case 2: tree has career-relevant content
+        gaps = (
+            [c.get("title", c["id"]) for c in relevant_weak]
+            + [c.get("title", c["id"]) for c in relevant_missing]
+        )
+        # Supplement: add required skills whose full phrase is not present in tree titles.
+        # Use normalised phrase matching (lowercase, strip punctuation except hyphens).
+        tree_corpus = " " + " ".join(c.get("title", c["id"]).lower() for c in all_chunks) + " "
+        for skill in required_skills:
+            skill_phrase = _re.sub(r"[^a-z0-9\- ]", "", skill.lower()).strip()
+            if skill_phrase and skill_phrase not in tree_corpus and skill not in gaps:
+                gaps.append(skill)
+    else:
+        # Case 3: mismatch
+        gaps = list(required_skills)
+
+    path_items = relevant_weak + relevant_missing
     steps = []
     for i, chunk in enumerate(path_items[:5], start=1):
+        reason = (
+            f"Topik ini paling relevan untuk karir '{career_goal}' "
+            "dan belum dikuasai -- prioritas tertinggi."
+            if i == 1 else
+            f"Diperlukan untuk mencapai '{career_goal}'; "
+            "selesaikan sebelum melanjutkan ke tahap berikutnya."
+        )
         steps.append(NT05PathStep(
             step=i,
             chunk_id=chunk["id"],
             chunk_title=chunk.get("title", chunk["id"]),
-            reason="Diprioritaskan untuk mencapai tujuan karir." if i == 1
-                   else "Diperlukan sebagai prasyarat berikutnya.",
+            reason=reason,
         ))
+
+    if total_chunks == 0:
+        reasoning = (
+            f"Belum ada topik dalam pohon belajar ini. "
+            f"Untuk mengejar karir '{career_goal}', mulailah dengan unggah materi yang relevan."
+        )
+    elif tree_career_match == 0.0:
+        reasoning = (
+            f"Pohon belajar aktif Anda membahas topik yang berbeda dari '{career_goal}'. "
+            f"Tidak ada topik dalam pohon ini yang langsung relevan untuk karir tersebut. "
+            f"Daftar di bawah menunjukkan kompetensi yang umumnya dibutuhkan untuk '{career_goal}' -- "
+            "unggah materi yang sesuai untuk mendapat analisis yang lebih personal."
+        )
+    elif tree_career_match < 0.3:
+        reasoning = (
+            f"Hanya sebagian kecil ({int(tree_career_match * 100)}%) topik dalam pohon belajar Anda "
+            f"yang relevan untuk karir '{career_goal}'. "
+            "Jalur di bawah menampilkan topik-topik yang ada dan relevan terlebih dahulu, "
+            "dilengkapi dengan kompetensi wajib yang belum tercakup."
+        )
+    elif path_items:
+        reasoning = (
+            f"Jalur belajar ini dibangun untuk tujuan karir '{career_goal}'. "
+            "Hanya topik yang relevan dengan karir tersebut yang dimasukkan dalam jalur, "
+            "diurutkan dari yang paling mendesak untuk dikuasai."
+        )
+    else:
+        reasoning = (
+            f"Semua topik yang relevan untuk karir '{career_goal}' sudah dikuasai. "
+            "Pertimbangkan memperluas materi belajar atau melanjutkan ke tingkat lanjutan."
+        )
 
     return NT05Output(
         target_goal=career_goal,
         strong_concepts=strong_titles,
         weak_concepts=weak_titles,
         knowledge_gaps=gaps,
-        missing_prerequisites=missing_titles,
+        missing_prerequisites=[c.get("title", c["id"]) for c in scored_missing],
         recommended_path=steps,
         estimated_completion_days=len(steps),
-        reasoning="Jalur belajar dibangun berdasarkan gap antara penguasaan saat ini dan target karir.",
+        reasoning=reasoning,
+        tree_career_match=tree_career_match,
     )
-

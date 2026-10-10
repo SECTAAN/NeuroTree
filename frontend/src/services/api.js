@@ -191,9 +191,33 @@ export const quizApi = {
 }
 
 export const careerApi = {
+  /**
+   * GET /api/v1/career/suggest
+   * Derives candidate career names from the active session's node titles via
+   * a rule-based domain mapper.  Returns { careers: string[], source, node_count }.
+   * Call this before pathway() so Panel A always sends a real career title.
+   */
+  suggest: () => api.get('/api/v1/career/suggest'),
+
   /** POST /api/v1/career/pathway */
   pathway: (careerGoal) =>
     api.post('/api/v1/career/pathway', { career_goal: careerGoal }),
+}
+
+export const edgeApi = {
+  /**
+   * PATCH /api/v1/edges/:edgeId/annotate
+   * Persist a note and/or router_enabled flag on an edge.
+   * Pass only the fields you want to update; omit the rest.
+   *   annotate(edgeId, { note: 'text' })
+   *   annotate(edgeId, { router_enabled: true })
+   *   annotate(edgeId, { note: 'text', router_enabled: false })
+   */
+  annotate: (edgeId, { note, router_enabled } = {}) =>
+    api.patch(`/api/v1/edges/${edgeId}/annotate`, {
+      ...(note           !== undefined ? { note }           : {}),
+      ...(router_enabled !== undefined ? { router_enabled } : {}),
+    }),
 }
 
 export const masterLightApi = {

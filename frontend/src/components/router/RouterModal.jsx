@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import FlashcardPanel from '../flashcards/FlashcardPanel'
-import { graphApi } from '../../services/api'
+import { graphApi, activeSession } from '../../services/api'
+import { flashcardStorageKey } from '../../hooks/useFlashcardProgress'
 
 /**
  * RouterModal — P1 Material Hub modal (spec 10.67).
@@ -217,6 +218,7 @@ export default function RouterModal({ router, onClose }) {
                 flashcards={data?.flashcards ?? []}
                 sourceLabel={router.sourceLabel ?? router.sourceNodeId}
                 targetLabel={router.targetLabel ?? router.targetNodeId}
+                storageKey={flashcardStorageKey(activeSession.id, router.edgeId)}
               />
             </div>
           )}

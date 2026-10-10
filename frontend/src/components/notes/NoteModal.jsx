@@ -21,6 +21,9 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
   const textareaRef = useRef(null)
   const MAX_LEN = 500
 
+  // _saveError is injected by SkillTreeCanvas when the backend PATCH fails.
+  const saveError = context._saveError ?? null
+
   const isEditing   = Boolean(context.note?.content)
   const sourceLabel = context.sourceLabel ?? context.sourceNodeId ?? '?'
   const targetLabel = context.targetLabel ?? context.targetNodeId ?? '?'
@@ -43,11 +46,12 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
   function handleSave() {
     if (!text.trim() || saving) return
     setSaving(true)
-    // Tiny artificial delay so the Save feedback is perceptible
-    setTimeout(() => {
-      onSave(context.edgeId, text.trim())
+    // onSave is async — it persists to the backend then updates local state.
+    // If the backend rejects, onSave sets _saveError on the context and returns
+    // without closing the modal, so setSaving(false) keeps the button usable.
+    Promise.resolve(onSave(context.edgeId, text.trim())).finally(() => {
       setSaving(false)
-    }, 120)
+    })
   }
 
   function handleDelete() {
@@ -168,6 +172,21 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
 
         {/* ── Footer actions ───────────────────────────────────────────────── */}
         <div className="px-5 pb-5 flex flex-col gap-3">
+
+          {/* API error banner — shown when backend save/delete failed */}
+          {saveError && (
+            <div
+              className="rounded-2xl px-4 py-3 text-xs flex items-center gap-2"
+              style={{
+                background: 'rgba(255,80,80,0.07)',
+                border: '1px solid rgba(255,80,80,0.2)',
+                color: 'rgba(255,120,120,0.9)',
+              }}
+            >
+              <span style={{ fontSize: 14 }}>⚠</span>
+              <span className="flex-1">{saveError}</span>
+            </div>
+          )}
 
           {/* Confirm-delete banner */}
           {confirmDelete && (

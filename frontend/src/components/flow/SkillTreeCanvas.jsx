@@ -16,7 +16,7 @@ import CyberpunkToolbar from './CyberpunkToolbar'
 import RouterModal      from '../router/RouterModal'
 import NoteModal        from '../notes/NoteModal'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
-import { graphApi, activeSession } from '../../services/api'
+import { graphApi, edgeApi, activeSession } from '../../services/api'
 // mockProgressiveApi removed — no /expand endpoint exists yet (Phase F-2+)
 
 // ── BFS depth-layered layout (Bottom-to-Top) ──────────────────────────────────
@@ -122,7 +122,17 @@ function Canvas({ graphData }) {
     const rfEdges = apiEdges
       .filter((e) => visibleIds.has(e.source_id) && visibleIds.has(e.target_id))
       .map((e, idx) => {
-        const edgeId = `e-${e.source_id}-${e.target_id}-${idx}`
+        // Use the stable DB UUID as the RF edge id so PATCH calls have the right key.
+        // Fall back to synthetic id for edges that pre-date the id field (edge case).
+        const edgeId = e.id ?? `e-${e.source_id}-${e.target_id}-${idx}`
+
+        // Restore a persisted note string from GET /graph as a NoteData object.
+        // The backend stores note as a plain TEXT column; we wrap it here so the
+        // rest of the frontend (EnergyEdge, NoteModal) sees a consistent shape.
+        const restoredNote = e.note
+          ? { id: `note-${edgeId}`, edgeId, content: e.note, createdAt: null, updatedAt: null }
+          : null
+
         return {
           id:     edgeId,
           source: e.source_id,
@@ -130,8 +140,19 @@ function Canvas({ graphData }) {
           type:   'energy',
           data: {
             status:  e.status ?? (e.unlocked === false ? 'locked' : 'active'),
-            router:  e.router ?? null,
-            note:    e.note   ?? null,
+            router:  e.router_enabled
+              ? {
+                  id:           `router-${edgeId}`,
+                  edgeId,
+                  sourceNodeId: e.source_id,
+                  targetNodeId: e.target_id,
+                  sourceLabel:  labelMap[e.source_id] ?? e.source_id,
+                  targetLabel:  labelMap[e.target_id] ?? e.target_id,
+                  title:        `${labelMap[e.source_id] ?? e.source_id} → ${labelMap[e.target_id] ?? e.target_id}`,
+                  createdAt:    null,
+                }
+              : (e.router ?? null),
+            note:    restoredNote,
             onOpenRouter: (router) => setRouterModal({
               ...router,
               sourceLabel: labelMap[router.sourceNodeId] ?? router.sourceNodeId,
@@ -340,8 +361,21 @@ function Canvas({ graphData }) {
     }, 420)   // matches growPulse duration (1s) with a comfortable lead-in
   }, [activeTool, revealedDepth, growingNodeId, buildRFArrays, applyRFArrays, setNodes])
 
-  // ── Note save handler ─────────────────────────────────────────────────────
-  const handleNoteSave = useCallback((edgeId, content) => {
+  // ── Note save handler — persists to backend, updates local state ──────────
+  const handleNoteSave = useCallback(async (edgeId, content) => {
+    try {
+      await edgeApi.annotate(edgeId, { note: content })
+    } catch (err) {
+      // Surface error visibly instead of silently pretending the save succeeded.
+      // NoteModal has already closed its saving spinner at this point; re-open
+      // with an error so the user knows to retry.
+      console.error('[NeuroTree] Note save failed:', err)
+      setNoteModal((prev) =>
+        prev ? { ...prev, _saveError: err.message ?? 'Save failed — please retry.' } : prev
+      )
+      return   // do NOT update local state if the server rejected the save
+    }
+
     setEdges((eds) =>
       eds.map((e) => {
         if (e.id !== edgeId) return e
@@ -360,8 +394,18 @@ function Canvas({ graphData }) {
     setNoteModal(null)
   }, [setEdges])
 
-  // ── Note delete handler ───────────────────────────────────────────────────
-  const handleNoteDelete = useCallback((edgeId) => {
+  // ── Note delete handler — clears on backend, then clears local state ──────
+  const handleNoteDelete = useCallback(async (edgeId) => {
+    try {
+      await edgeApi.annotate(edgeId, { note: '' })  // empty string → backend stores NULL
+    } catch (err) {
+      console.error('[NeuroTree] Note delete failed:', err)
+      setNoteModal((prev) =>
+        prev ? { ...prev, _saveError: err.message ?? 'Delete failed — please retry.' } : prev
+      )
+      return
+    }
+
     setEdges((eds) =>
       eds.map((e) => e.id !== edgeId ? e : { ...e, data: { ...e.data, note: null } })
     )

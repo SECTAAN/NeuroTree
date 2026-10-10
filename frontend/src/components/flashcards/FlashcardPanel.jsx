@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import useFlashcardProgress from '../../hooks/useFlashcardProgress'
 
 /**
  * FlashcardPanel — Active-Recall flashcard UI (spec 10.70).
@@ -15,11 +16,15 @@ import { useState } from 'react'
  *   flashcards  — array of { id, front, back, sourceNodeId? }
  *   sourceLabel — human label for the source node (for badge display)
  *   targetLabel — human label for the target node
+ *   storageKey  — localStorage key for persisting progress across refreshes.
+ *                 Format: "nt-fc-progress-<sessionId>-<edgeId>".
+ *                 Pass null/undefined to disable persistence (pure in-memory).
  */
-export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLabel }) {
+export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLabel, storageKey }) {
   const [index,   setIndex]   = useState(0)
   const [flipped, setFlipped] = useState(false)
-  const [results, setResults] = useState({})   // { [cardId]: 'known' | 'review' }
+  // results persisted via localStorage when storageKey is provided
+  const [results, markCard, clearProgress] = useFlashcardProgress(storageKey)
 
   if (!flashcards.length) {
     return (
@@ -36,7 +41,7 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
   const knownCount = Object.values(results).filter((v) => v === 'known').length
 
   function handleMark(verdict) {
-    setResults((prev) => ({ ...prev, [card.id]: verdict }))
+    markCard(card.id, verdict)
     setFlipped(false)
     // Advance to next unreviewed card, or wrap around
     const nextIdx = (index + 1) % total
@@ -44,7 +49,7 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
   }
 
   function handleRestart() {
-    setResults({})
+    clearProgress()
     setIndex(0)
     setFlipped(false)
   }

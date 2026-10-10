@@ -255,9 +255,12 @@ def get_visual_graph(
         ],
         "edges": [
             {
-                "source_id": e.source_id,
-                "target_id": e.target_id,
-                "relationship": e.relationship_type,
+                "id":             e.id,
+                "source_id":      e.source_id,
+                "target_id":      e.target_id,
+                "relationship":   e.relationship_type,
+                "note":           e.note,
+                "router_enabled": bool(e.router_enabled),
             }
             for e in edges
         ],
@@ -305,6 +308,54 @@ def get_node_content(
 def _mastery_level(score: float) -> str:
     from app.services.mastery_service import get_mastery_level
     return get_mastery_level(score)
+
+
+# ── D. Edge Annotation (Note + Router Marker) ────────────────────────────────
+
+class EdgeAnnotateRequest(BaseModel):
+    note: Optional[str] = None
+    router_enabled: Optional[bool] = None
+
+
+@router.patch("/edges/{edge_id}/annotate", status_code=status.HTTP_200_OK)
+def annotate_edge(
+    edge_id: str,
+    body: EdgeAnnotateRequest,
+    session_id: str = Depends(get_active_session_id),
+    db: DbSession = Depends(get_db),
+):
+    """
+    Persist a note and/or router_enabled flag on an edge.
+
+    Scoped by X-Session-ID so users can only annotate edges belonging to
+    their active session. Partial updates: omit a field to leave it unchanged.
+
+    Returns the updated annotation values.
+    """
+    edge = (
+        db.query(Edge)
+        .filter(Edge.id == edge_id, Edge.session_id == session_id)
+        .first()
+    )
+    if not edge:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Edge '{edge_id}' not found in this session.",
+        )
+
+    if body.note is not None:
+        edge.note = body.note if body.note.strip() else None
+    if body.router_enabled is not None:
+        edge.router_enabled = body.router_enabled
+
+    db.commit()
+    db.refresh(edge)
+
+    return {
+        "edge_id":        edge.id,
+        "note":           edge.note,
+        "router_enabled": bool(edge.router_enabled),
+    }
 
 
 # ── F. Session Summary (Dashboard History) ───────────────────────────────────
