@@ -3,8 +3,8 @@
 #
 # Last updated : 2026-10-14
 # Branch       : master2
-# HEAD commit  : 9ef2559  (feat: M-12 demo readiness and flashcard fix)
-# Working tree : 12 files modified/untracked — NOT YET COMMITTED (see Git Status below)
+# HEAD commit  : 3acde22  (feat: M-13–M-18 persistence and career pathway improvements)
+# Working tree : CLEAN — all M-13 through M-18 changes committed
 # Milestone    : M-18 — Generalisation complete + LIVE NT-05 verified
 
 ---
@@ -239,41 +239,34 @@ All 3 outputs validated against `NT05Output` schema: `user_id`, `target_goal`, `
 | Frontend build | ✅ Clean — 306 modules, 3.65s, pre-existing 516kB chunk warning only |
 | LIVE NT-05 (3 direct Langflow calls) | ✅ **3/3 PASS** — AI/ML match, networking mismatch, NE match |
 
-## Git Status at M-18 Handoff
+## Git Status at M-18 Commit
 
-**Branch:** `master2` (up to date with `origin/master2`)
-**HEAD:** `9ef2559` — `feat: M-12 demo readiness and flashcard fix`
-**Working tree:** All M-13 + M-14 + M-15 changes are **unstaged** (not committed). No work has been discarded.
+**Branch:** `master2`
+**HEAD:** `3acde22` — `feat: M-13-M-18 persistence and career pathway improvements`
+**Working tree:** ✅ **CLEAN** — all 19 M-13 through M-18 files committed.
 
-### Modified files (unstaged):
+### Committed files (19):
 ```
-M  backend/app/api/career.py               ← M-18: 2-hit minimum; more specific keyword phrases
+M  backend/app/api/career.py
 M  backend/app/api/material.py
 M  backend/app/models/edge.py
-M  backend/app/schemas/langflow_schema.py  ← M-17 tree_career_match; M-18 sentinel docs
-M  backend/app/services/langflow_service.py ← M-18: unknown-career path, sentinel, phrase supplement
+M  backend/app/schemas/langflow_schema.py
+M  backend/app/services/langflow_service.py
 M  context.md
 M  frontend/src/components/flashcards/FlashcardPanel.jsx
 M  frontend/src/components/flow/SkillTreeCanvas.jsx
 M  frontend/src/components/notes/NoteModal.jsx
 M  frontend/src/components/router/RouterModal.jsx
-M  frontend/src/pages/CareerMap.jsx        ← M-18: isUnknown notice + weak/gaps hidden on unknown
+M  frontend/src/pages/CareerMap.jsx
 M  frontend/src/services/api.js
+A  backend/conftest.py
+A  backend/migrate_add_edge_annotations.py
+A  backend/pytest.ini
+A  backend/test_edge_annotation.py
+A  backend/test_career_pathway.py
+A  frontend/src/hooks/useFlashcardProgress.js
+A  frontend/test_flashcard_persistence.mjs
 ```
-
-### Untracked new files:
-```
-?? backend/conftest.py
-?? backend/migrate_add_edge_annotations.py
-?? backend/pytest.ini
-?? backend/test_edge_annotation.py
-?? backend/test_career_pathway.py   ← M-18: Section G (15 tests); 62 tests total
-?? frontend/src/hooks/useFlashcardProgress.js
-?? frontend/test_flashcard_persistence.mjs
-```
-
-> **Do not `git reset` or `git restore` these files.** They contain M-13 through M-18 implementation.
-> Commit when verified: `git add -A && git commit -m "feat: M-13…M-18 — Note+Flashcard persistence, Career Pathway generalisation + diverse-domain regression tests"`
 
 ## M-14 Changes (preserved)
 
