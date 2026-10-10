@@ -7,17 +7,53 @@ const AppContext = createContext(null)
 const PAGE_KEY    = 'neurotree-page'
 const SESSION_KEY = 'neurotree-active-session'  // F-6: persist active tree UUID
 
-// Pages that are safe to restore on refresh (skip 'landing' — first load
-// should always show the landing screen for new tabs/sessions).
-const RESTORABLE_PAGES = new Set(['dashboard', 'skilltree', 'careermap'])
+// ── Page ↔ URL path mapping ───────────────────────────────────────────────────
+// Used for pushState / popstate so browser Back/Forward works.
+const PAGE_TO_PATH = {
+  landing:   '/',
+  intro:     '/intro',
+  dashboard: '/dashboard',
+  skilltree: '/skilltree',
+  careermap: '/careermap',
+}
+const PATH_TO_PAGE = Object.fromEntries(
+  Object.entries(PAGE_TO_PATH).map(([p, u]) => [u, p])
+)
 
-function readPersistedPage() {
-  try {
-    const stored = sessionStorage.getItem(PAGE_KEY)
-    return RESTORABLE_PAGES.has(stored) ? stored : 'landing'
-  } catch {
+// Pages that are safe to restore on refresh from sessionStorage alone
+// (used when history.state is absent, e.g. direct URL entry).
+// 'dashboard' excluded: new tab should always start at LandingPage → IntroPage.
+// 'intro' included: refresh while reading intro stays there.
+const RESTORABLE_PAGES = new Set(['intro', 'skilltree', 'careermap'])
+
+function readInitialPage() {
+  const pathname = window.location.pathname
+
+  // 0. Root path always means the entry/landing screen, unconditionally.
+  //    This prevents stale history.state or sessionStorage from skipping the
+  //    LandingPage when the user opens or refreshes at '/'.
+  if (pathname === '/' || pathname === '') {
     return 'landing'
   }
+
+  // 1. For non-root deep paths, prefer history.state (reliable on same-tab refresh).
+  const stateFromHistory = window.history.state?.page
+  if (stateFromHistory && PAGE_TO_PATH[stateFromHistory] && stateFromHistory !== 'landing') {
+    // Only trust state if the stored page's path matches the current pathname,
+    // preventing a stale state from a different page overriding the URL.
+    if (PAGE_TO_PATH[stateFromHistory] === pathname) {
+      return stateFromHistory
+    }
+  }
+
+  // 2. Resolve page from the current pathname directly.
+  const fromPath = PATH_TO_PAGE[pathname]
+  if (fromPath && RESTORABLE_PAGES.has(fromPath)) {
+    return fromPath
+  }
+
+  // 3. Unknown path — fall back to landing.
+  return 'landing'
 }
 
 function persistPage(page) {
@@ -25,6 +61,29 @@ function persistPage(page) {
     sessionStorage.setItem(PAGE_KEY, page)
   } catch {
     // sessionStorage unavailable — silent, no crash
+  }
+}
+
+function pushHistoryEntry(page) {
+  const path = PAGE_TO_PATH[page] ?? '/'
+  // Only push if this is genuinely a new page (avoid duplicate entries on
+  // repeated navigateTo calls with the same target).
+  if (window.history.state?.page !== page) {
+    window.history.pushState({ page }, '', path)
+  }
+}
+
+// Seed the very first history entry so popstate fires correctly on first Back.
+// Uses replaceState so we don't add a spurious extra entry on top of the
+// browser's initial history entry.
+// Guard: only seed if the page's canonical path matches the current pathname,
+// preventing us from tagging a '/' entry as {page:'intro'}.
+function seedInitialHistoryEntry(page) {
+  const expectedPath = PAGE_TO_PATH[page] ?? '/'
+  const currentPath  = window.location.pathname
+  // Only write state when there is no state yet AND the path is consistent.
+  if (!window.history.state?.page && expectedPath === currentPath) {
+    window.history.replaceState({ page }, '', currentPath)
   }
 }
 
@@ -51,9 +110,14 @@ function persistSessionId(id) {
 
 export function AppProvider({ children }) {
   // ── Navigation state (replaces React Router for simplicity) ───────────────
-  // page: 'landing' | 'dashboard' | 'skilltree' | 'careermap'
-  // Initialise from sessionStorage so refresh restores the correct page.
-  const [page, setPage]           = useState(() => readPersistedPage())
+  // page: 'landing' | 'intro' | 'dashboard' | 'skilltree' | 'careermap'
+  // Initialised from history.state → pathname → sessionStorage (in that order).
+  const [page, setPage] = useState(() => {
+    const initial = readInitialPage()
+    // Seed the first history entry so the browser has a state to pop back to.
+    seedInitialHistoryEntry(initial)
+    return initial
+  })
   const [activeTreeId, setActiveTreeId] = useState(null)
 
   // ── F-6: Active session (per-tree UUID) ────────────────────────────────────
@@ -96,6 +160,27 @@ export function AppProvider({ children }) {
     setQuizOpen(false)
     setQuizNode(null)
   }, [])
+
+  // ── Browser Back/Forward — popstate listener ──────────────────────────────
+  // When the user presses Back or Forward, the browser fires 'popstate' with
+  // the state object we wrote in pushState/replaceState.  We read page from
+  // that state and update React — no pushState here (the browser already moved).
+  useEffect(() => {
+    function onPopState(e) {
+      const target = e.state?.page
+      if (target && PAGE_TO_PATH[target]) {
+        setPage(target)
+        persistPage(target)
+      } else {
+        // No recognisable state (e.g. browser history entry predates this app).
+        // Fallback to landing — safest choice.
+        setPage('landing')
+        persistPage('landing')
+      }
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, []) // run once; setPage / persistPage are stable
 
   // ── P0-2: Restore treeName/learningGoal after a refresh to 'skilltree' ─────
   // On mount, if we restored to 'skilltree' but treeName is empty, pull it
@@ -172,10 +257,12 @@ export function AppProvider({ children }) {
    *   navigateTo('skilltree', treeId)  // legacy string form still supported
    *
    * F-6 P0-2: persists the target page to sessionStorage so refresh restores it.
+   * M-19d: pushes a browser history entry so Back/Forward work natively.
    */
   const navigateTo = useCallback((target, meta = null) => {
     setPage(target)
     persistPage(target)
+    pushHistoryEntry(target)   // M-19d: enable browser Back/Forward
     if (typeof meta === 'string') {
       // Legacy: navigateTo('skilltree', treeId)
       setActiveTreeId(meta)

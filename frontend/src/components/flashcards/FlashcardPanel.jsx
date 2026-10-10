@@ -3,33 +3,19 @@ import useFlashcardProgress from '../../hooks/useFlashcardProgress'
 
 /**
  * FlashcardPanel — Active-Recall flashcard UI (spec 10.70).
- *
- * Each card has a front (question) and back (answer).
- * The user can:
- *   • Click the card to flip it (reveal the answer)
- *   • Mark it as "Got it ✓" or "Review again ↺"
- *
- * Progress: shows X/Y cards and a completion bar.
- * Source tracing: if card.sourceNodeId is set, a small badge shows which node it came from.
- *
- * Props:
- *   flashcards  — array of { id, front, back, sourceNodeId? }
- *   sourceLabel — human label for the source node (for badge display)
- *   targetLabel — human label for the target node
- *   storageKey  — localStorage key for persisting progress across refreshes.
- *                 Format: "nt-fc-progress-<sessionId>-<edgeId>".
- *                 Pass null/undefined to disable persistence (pure in-memory).
+ * M-19: full --nt-* palette. All neon (#00FFA3, #00F3FF) replaced.
  */
 export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLabel, storageKey }) {
   const [index,   setIndex]   = useState(0)
   const [flipped, setFlipped] = useState(false)
-  // results persisted via localStorage when storageKey is provided
   const [results, markCard, clearProgress] = useFlashcardProgress(storageKey)
 
   if (!flashcards.length) {
     return (
       <div className="py-10 text-center">
-        <p className="text-white/30 text-sm">No flashcards available for this connection.</p>
+        <p className="text-sm" style={{ color: 'var(--nt-text-3)' }}>
+          No flashcards available for this connection.
+        </p>
       </div>
     )
   }
@@ -43,7 +29,6 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
   function handleMark(verdict) {
     markCard(card.id, verdict)
     setFlipped(false)
-    // Advance to next unreviewed card, or wrap around
     const nextIdx = (index + 1) % total
     setIndex(nextIdx)
   }
@@ -61,16 +46,16 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
 
       {/* ── Progress bar + counter ─────────────────────────────────────── */}
       <div className="mb-4">
-        <div className="flex justify-between text-xs text-white/30 mb-1.5">
+        <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--nt-text-3)' }}>
           <span>{done}/{total} reviewed</span>
-          <span style={{ color: 'rgba(0,255,163,0.7)' }}>{knownCount} known</span>
+          <span style={{ color: 'var(--nt-primary-lt)' }}>{knownCount} known</span>
         </div>
-        <div className="h-1 rounded-full bg-white/8 overflow-hidden">
+        <div className="nt-track h-1.5 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${(done / total) * 100}%`,
-              background: 'linear-gradient(90deg, rgba(0,255,163,0.7), rgba(0,243,255,0.5))',
+              background: 'linear-gradient(90deg, var(--nt-primary), var(--nt-primary-lt))',
             }}
           />
         </div>
@@ -82,22 +67,20 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4"
             style={{
-              background: 'rgba(0,255,163,0.08)',
-              border: '1px solid rgba(0,255,163,0.25)',
-              boxShadow: '0 0 20px rgba(0,255,163,0.12)',
+              background: 'rgba(53,78,71,0.10)',
+              border: '1px solid rgba(53,78,71,0.25)',
+              boxShadow: 'var(--nt-shadow-out-sm)',
             }}
           >
-            ⚡
+            ✦
           </div>
-          <p className="text-sm font-medium text-white/80 mb-1">Session complete!</p>
-          <p className="text-xs text-white/35 mb-5">
+          <p className="text-sm font-medium mb-1" style={{ color: 'var(--nt-text)' }}>
+            Session complete!
+          </p>
+          <p className="text-xs mb-5" style={{ color: 'var(--nt-text-3)' }}>
             {knownCount}/{total} cards mastered
           </p>
-          <button
-            onClick={handleRestart}
-            className="btn-liquid px-5 py-2 text-xs"
-            style={{ borderColor: 'rgba(0,243,255,0.3)' }}
-          >
+          <button onClick={handleRestart} className="nt-btn-secondary px-5 py-2 text-xs">
             Review again ↺
           </button>
         </div>
@@ -105,31 +88,24 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
         <>
           {/* ── Card body ─────────────────────────────────────────────── */}
           <div
-            className="flex-1 rounded-2xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-200 mb-4 relative overflow-hidden"
+            className="flex-1 nt-card rounded-2xl p-5 flex flex-col justify-between cursor-pointer
+              transition-all duration-200 mb-4 relative overflow-hidden"
             style={{
-              background: flipped
-                ? 'rgba(0,243,255,0.05)'
-                : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${flipped ? 'rgba(0,243,255,0.2)' : 'rgba(255,255,255,0.07)'}`,
+              background: flipped ? 'rgba(53,78,71,0.06)' : 'var(--nt-surface)',
+              border: flipped ? '1px solid rgba(53,78,71,0.22)' : '1px solid var(--nt-border)',
+              boxShadow: flipped ? 'var(--nt-shadow-in)' : 'var(--nt-shadow-out-sm)',
               minHeight: 140,
             }}
             onClick={() => !cardResult && setFlipped((v) => !v)}
           >
             {/* Card index badge */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] text-white/20 font-mono tracking-widest uppercase">
+              <span className="nt-section-label">
                 {flipped ? 'Answer' : 'Question'} · {index + 1}/{total}
               </span>
               {/* Source node badge */}
               {card.sourceNodeId && (
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full"
-                  style={{
-                    background: 'rgba(0,243,255,0.07)',
-                    border: '1px solid rgba(0,243,255,0.15)',
-                    color: 'rgba(0,243,255,0.5)',
-                  }}
-                >
+                <span className="nt-chip text-[10px] px-2 py-0.5">
                   {card.sourceNodeId === flashcards[0]?.sourceNodeId ? sourceLabel : targetLabel}
                 </span>
               )}
@@ -138,14 +114,14 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
             {/* Card content */}
             <p
               className="text-sm leading-relaxed flex-1 flex items-center"
-              style={{ color: flipped ? 'rgba(240,242,245,0.9)' : 'rgba(240,242,245,0.75)' }}
+              style={{ color: flipped ? 'var(--nt-text)' : 'var(--nt-text-2)' }}
             >
               {flipped ? card.back : card.front}
             </p>
 
             {/* Flip hint */}
             {!flipped && !cardResult && (
-              <p className="text-[10px] text-white/20 mt-3 text-center">
+              <p className="text-[10px] mt-3 text-center" style={{ color: 'var(--nt-text-muted)' }}>
                 Click to reveal answer
               </p>
             )}
@@ -154,15 +130,10 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
             {cardResult && (
               <div
                 className="absolute inset-0 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(17,19,21,0.75)' }}
+                style={{ background: 'rgba(var(--nt-bg-rgb, 250,242,227), 0.80)' }}
               >
                 <span
-                  className="text-xs font-medium px-3 py-1.5 rounded-full"
-                  style={
-                    cardResult === 'known'
-                      ? { background: 'rgba(0,255,163,0.12)', color: 'rgba(0,255,163,0.8)', border: '1px solid rgba(0,255,163,0.25)' }
-                      : { background: 'rgba(255,140,0,0.10)', color: 'rgba(255,160,30,0.8)', border: '1px solid rgba(255,140,0,0.2)' }
-                  }
+                  className={`text-xs font-medium px-3 py-1.5 rounded-full ${cardResult === 'known' ? 'nt-fc-known' : 'nt-fc-review'}`}
                 >
                   {cardResult === 'known' ? '✓ Marked as known' : '↺ Marked for review'}
                 </span>
@@ -177,27 +148,17 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
           >
             <button
               onClick={() => handleMark('review')}
-              className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all duration-200"
-              style={{
-                background: 'rgba(255,140,0,0.07)',
-                border: '1px solid rgba(255,140,0,0.2)',
-                color: 'rgba(255,160,30,0.8)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,140,0,0.12)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,140,0,0.07)' }}
+              className="nt-fc-review flex-1 py-2.5 rounded-xl text-xs font-medium transition-all duration-200"
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
             >
               ↺ Review again
             </button>
             <button
               onClick={() => handleMark('known')}
-              className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all duration-200"
-              style={{
-                background: 'rgba(0,255,163,0.07)',
-                border: '1px solid rgba(0,255,163,0.2)',
-                color: 'rgba(0,255,163,0.8)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,255,163,0.13)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,255,163,0.07)' }}
+              className="nt-fc-known flex-1 py-2.5 rounded-xl text-xs font-medium transition-all duration-200"
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
             >
               ✓ Got it
             </button>
@@ -213,13 +174,10 @@ export default function FlashcardPanel({ flashcards = [], sourceLabel, targetLab
                 style={{
                   width:      i === index ? 16 : 6,
                   height:     6,
-                  background: results[fc.id] === 'known'
-                    ? 'rgba(0,255,163,0.6)'
-                    : results[fc.id] === 'review'
-                    ? 'rgba(255,160,30,0.5)'
-                    : i === index
-                    ? 'rgba(0,243,255,0.7)'
-                    : 'rgba(255,255,255,0.12)',
+                  background: results[fc.id] === 'known'  ? 'var(--nt-primary)'    :
+                              results[fc.id] === 'review' ? 'var(--nt-coral-lt)'   :
+                              i === index                 ? 'var(--nt-primary-lt)' :
+                                                            'var(--nt-border-2)',
                 }}
               />
             ))}

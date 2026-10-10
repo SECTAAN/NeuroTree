@@ -3,9 +3,9 @@
 #
 # Last updated : 2026-10-14
 # Branch       : master2
-# HEAD commit  : 3acde22  (feat: M-13–M-18 persistence and career pathway improvements)
-# Working tree : CLEAN — all M-13 through M-18 changes committed
-# Milestone    : M-18 — Generalisation complete + LIVE NT-05 verified
+# HEAD commit  : 87042fe  (chore: update context.md — on top of 3acde22 M-13–M-18 commit)
+# Working tree : 14 files modified (uncommitted M-19 UI redesign work)
+# Milestone    : M-19 in progress — Global UI Redesign (skeuomorphic organic palette)
 
 ---
 
@@ -443,7 +443,187 @@ The system only provides domain-matched suggestions for 9 IT/tech domains. Trees
 | ~~LIVE-NT05~~ | ~~Low~~ | ~~RESOLVED (M-18 LIVE verified)~~ NT-05 prompt now contains `career_required_skills` in template. Three LIVE tests confirm LLM uses it correctly for gap analysis and mismatch detection. |
 | DOMAIN-LIMIT | Low | Only 9 IT/tech domains supported by /career/suggest. Non-IT trees (Accounting, Biology, etc.) will always get fallback suggestion list — this is now honest but not helpful for non-IT users |
 
+## M-19 UI Redesign — COMPLETE (uncommitted, pending UAT)
+
+**Goal:** Replace cyberpunk/neon aesthetic with realistic skeuomorphic organic design.
+**Palette:** Light (#faf2e3 / #354e47 / #db6271), Dark (#092328 / #12544F / #2A835F / #8BBB92).
+**Default theme:** Light. Toggle in SkillTree toolbar applies globally.
+
+### All 32 files modified in M-19 — NO neon remains:
+
+| File | Status |
+|------|--------|
+| `frontend/src/styles/index.css` | ✅ Full design system + utility classes |
+| `frontend/tailwind.config.js` | ✅ New nt.* and nt-dark.* color tokens |
+| `frontend/src/hooks/useCanvasTools.js` | ✅ Default theme 'light' |
+| `frontend/src/pages/LandingPage.jsx` | ✅ Organic skeuomorphic |
+| `frontend/src/pages/Dashboard.jsx` | ✅ New palette, tactile tree cards |
+| `frontend/src/pages/SkillTree.jsx` | ✅ Chip + loading states |
+| `frontend/src/pages/CareerMap.jsx` | ✅ Full four-color palette |
+| `frontend/src/components/layout/CollapsibleHeader.jsx` | ✅ Clay surface |
+| `frontend/src/components/layout/HamburgerSidebar.jsx` | ✅ Clay surface |
+| `frontend/src/components/flow/CyberpunkToolbar.jsx` | ✅ Accent colors |
+| `frontend/src/components/flow/GlowingNodeCard.jsx` | ✅ Palette + buttons |
+| `frontend/src/components/flow/NeonLampNode.jsx` | ✅ Organic greens |
+| `frontend/src/components/flow/EnergyEdge.jsx` | ✅ Cables + markers |
+| `frontend/src/components/flow/SkillTreeCanvas.jsx` | ✅ Canvas bg #faf2e3/#092328, grid #e0d5c0/#0e3035, MiniMap primary green |
+| `frontend/src/components/flow/MasterLightNode.jsx` | ✅ var(--nt-bg) handle; gold tones retained for bulb state |
+| `frontend/src/components/ui/GlassPanel.jsx` | ✅ Neon border variants → primary/coral/gold; glass-panel → nt-panel |
+| `frontend/src/components/ui/LiquidButton.jsx` | ✅ Neon hover effects → nt-btn-primary/secondary/ghost |
+| `frontend/src/components/KnowledgeGraph.jsx` | ✅ Legacy dead file — neon replaced (not imported by any page) |
+| `frontend/src/components/notes/NoteModal.jsx` | ✅ Organic glass |
+| `frontend/src/components/newtree/NewTreeDialog.jsx` | ✅ Backdrop + footer |
+| `frontend/src/components/newtree/AIProcessingState.jsx` | ✅ Organic tree SVG |
+| `frontend/src/components/newtree/InitializationStep.jsx` | ✅ nt-input |
+| `frontend/src/components/newtree/KnowledgeSourceStep.jsx` | ✅ --nt-* colors |
+| `frontend/src/components/newtree/KnowledgeSourceTabs.jsx` | ✅ nt-tab-bar, nt-tab-active |
+| `frontend/src/components/newtree/DocumentUploader.jsx` | ✅ nt-inset drop zone |
+| `frontend/src/components/newtree/PasteTextInput.jsx` | ✅ nt-input |
+| `frontend/src/components/newtree/GenerationError.jsx` | ✅ nt-btn-primary, coral error |
+| `frontend/src/components/newtree/FilePreview.jsx` | ✅ Clay file badge |
+| `frontend/src/components/newtree/NewTreeStepper.jsx` | ✅ Step circles --nt-primary, no neon |
+| `frontend/src/components/quiz/QuizModal.jsx` | ✅ Full palette, nt-track mastery bar |
+| `frontend/src/components/quiz/MasterLightModal.jsx` | ✅ Gold accent retained |
+| `frontend/src/components/router/RouterModal.jsx` | ✅ nt-modal-backdrop, nt-card |
+| `frontend/src/components/flashcards/FlashcardPanel.jsx` | ✅ nt-fc-known/review, nt-track |
+| `frontend/src/components/dashboard/MyTreesModal.jsx` | ✅ nt-card, nt-track, nt-spinner |
+
+### Build/test status at M-19 COMPLETE:
+- Backend: **69/69 pass** ✅
+- Frontend build: **✓ 306 modules, 4.70s, clean** ✅
+- Grep audit: **0 neon/cyberpunk color references** in any .jsx file ✅
+- UAT: pending user review (browser)
+
+## M-19b Typography — Geist Mono Variable (uncommitted)
+
+**Goal:** Replace Inter/Lora CDN fonts with Vercel Geist Mono Variable (self-hosted), applied globally across all pages, components, and modes.
+
+### Dependency
+- `@fontsource-variable/geist-mono@5.3.0` added to `frontend/package.json` dependencies.
+- Installed via pnpm. Font files bundled as `.woff2` subsets in dist (no external CDN).
+
+### Changed files
+
+| File | Change |
+|---|---|
+| `frontend/src/main.jsx` | Added `import '@fontsource-variable/geist-mono'` (single entry-point import) |
+| `frontend/src/styles/index.css` | Removed Google Fonts `@import`; added `--font-primary`, `--fw-*` weight tokens, `--nt-text-link/interactive/placeholder` semantic colors for both themes; updated all 3 hardcoded `font-family: 'Inter'` declarations to `var(--font-primary)`; added `::placeholder` rule; added 10 `.nt-type-*` utility classes |
+| `frontend/tailwind.config.js` | Updated `fontFamily.sans/mono/serif` to `["Geist Mono Variable", "ui-monospace", "monospace"]` |
+
+### Typography tokens
+
+| Token | Value | Usage |
+|---|---|---|
+| `--font-primary` | `'Geist Mono Variable', ui-monospace, monospace` | Applied to `html, body, #root` |
+| `--fw-thin` | 100 | Decorative only |
+| `--fw-extralight` | 200 | Muted labels |
+| `--fw-light` | 300 | `.nt-type-caption`, `.nt-type-muted` |
+| `--fw-regular` | 400 | Default body, inputs |
+| `--fw-medium` | 500 | Nav, controls, `.nt-type-label` |
+| `--fw-semibold` | 600 | Card titles, headings |
+| `--fw-bold` | 700 | Page titles, `.nt-type-display` |
+| `--fw-extrabold` | 800 | Reserved for key metrics |
+| `--fw-black` | 900 | Rare display emphasis |
+
+### Typography hierarchy classes
+
+`.nt-type-display` (700) · `.nt-type-heading` (600) · `.nt-type-subhead` (500) · `.nt-type-body` (400) · `.nt-type-label` (500, 0.75rem) · `.nt-type-caption` (300) · `.nt-type-muted` (300) · `.nt-type-code` (400) · `.nt-type-nav` (500, 0.8125rem) · `.nt-type-btn` (600)
+
+### Theme-aware text colors added
+
+| Token | Light | Dark |
+|---|---|---|
+| `--nt-text-link` | `#354e47` | `#8bbb92` |
+| `--nt-text-interactive` | `#354e47` | `#8bbb92` |
+| `--nt-text-placeholder` | `rgba(44,62,56,0.38)` | `rgba(216,237,230,0.32)` |
+
+### Build result at M-19b
+- `✓ 308 modules, 5.07s, clean` — 6 Geist Mono `.woff2` subsets emitted to dist ✅
+- All three previously hardcoded `font-family: 'Inter'` declarations replaced ✅
+- Google Fonts CDN `@import` removed — fully self-hosted ✅
+- No new warnings or errors ✅
+
+## M-19c Introduction Page (uncommitted)
+
+**Goal:** Add a scrollable product-introduction page between the existing Landing Page and Dashboard.
+
+### User journey (updated)
+`LandingPage` (entry) → `IntroPage` (new) → `Dashboard` / New Tree
+
+### New file
+- `frontend/src/pages/IntroPage.jsx` — 7 sections: Hero, Why, How It Works, Adaptive Learning, Chunking, Career Pathway, Final CTA. Includes sticky header with nav links, light/dark theme toggle, and "Start Learning" CTA.
+
+### Modified files
+| File | Change |
+|---|---|
+| `frontend/src/App.jsx` | Added `'intro'` route + `import IntroPage` |
+| `frontend/src/pages/LandingPage.jsx` | `navigateTo('dashboard')` → `navigateTo('intro')` |
+| `frontend/src/styles/index.css` | ~570 lines of IntroPage CSS appended |
+
+### Navigation & routing
+- `'intro'` is **not** in `RESTORABLE_PAGES` — refresh from intro returns to `'landing'` (existing behavior for non-dashboard pages preserved).
+- Theme toggle uses same `localStorage` key (`neurotree-theme`) and `applyThemeClass` pattern as `useCanvasTools`. Consistent with Tree Map theme.
+- "Create Your First Tree →" and "Start Learning →" CTAs call `navigateTo('dashboard')`.
+
+### Content accuracy
+- All product capabilities described based on verified code (NT-01–NT-05, mastery ≥ 70 threshold, active recall quiz system).
+- Two real published quotes: Roediger & McDaniel (*Make It Stick*, 2014) for active recall; George A. Miller (1956, *Psychological Review*) for chunking.
+- Career Pathway section includes explicit disclaimer: exploratory, not employment guarantees.
+
+### Build result at M-19c
+- `✓ 309 modules, 6.74s, clean` ✅
+- No new errors; pre-existing chunk size warning only ✅
+
 ## Next Task — Post-UAT (unchanged)
+
+## M-19d Browser History / Back Navigation (uncommitted)
+
+**Goal:** Make browser Back/Forward work consistently with SPA page transitions, and add an in-app Back button on IntroPage.
+
+### Root cause
+`navigateTo` only updated React state and `sessionStorage`. It never touched `window.history`, so the browser stack was always a single entry — Back/Forward had no effect inside the app.
+
+### Implementation — `window.history` integration
+
+| Change | Detail |
+|---|---|
+| `PAGE_TO_PATH` / `PATH_TO_PAGE` maps | `landing→/`, `intro→/intro`, `dashboard→/dashboard`, etc. |
+| `pushHistoryEntry(page)` | Called inside `navigateTo`; uses `pushState` with guard against duplicate entries |
+| `seedInitialHistoryEntry(page)` | `replaceState` on first mount so the initial entry has a recognisable state object |
+| `readInitialPage()` replaces `readPersistedPage()` | Priority: `history.state.page` → `location.pathname` → `sessionStorage` |
+| `popstate` listener in `AppProvider` | Reads `e.state.page` and calls `setPage` + `persistPage` — no pushState from here |
+| `navigateTo` updated | Calls `pushHistoryEntry(target)` after updating React state |
+
+### In-app Back button on IntroPage
+
+- `handleBack()` in `IntroPage`: calls `window.history.back()` when there is a prior in-app entry; falls back to `navigateTo('landing')` when history has no prior entry (direct URL load, fresh tab).
+- `IntroHeader` receives `onBack` prop; renders `← Back` button left of the wordmark.
+- CSS: `.intro-back-btn` — skeuomorphic border, Geist Mono 500, hover slides left 2px.
+
+### Modified files
+| File | Change |
+|---|---|
+| `frontend/src/context/AppContext.jsx` | `readInitialPage`, `pushHistoryEntry`, `seedInitialHistoryEntry`, `popstate` listener, `navigateTo` updated |
+| `frontend/src/pages/IntroPage.jsx` | `handleBack`, `onBack` prop on `IntroHeader`, Back button JSX |
+| `frontend/src/styles/index.css` | `.intro-back-btn` CSS added |
+
+### Navigation matrix after fix
+
+| Action | Result |
+|---|---|
+| New tab (no history) | `history.state` empty → `readInitialPage` → `landing` ✅ |
+| Click "Begin Learning" | `pushState({page:'intro'}, '', '/intro')` → URL changes to `/intro` ✅ |
+| Click "Create Your First Tree" | `pushState({page:'dashboard'}, '', '/dashboard')` ✅ |
+| Browser Back from Dashboard | `popstate` → `page='intro'` ✅ |
+| Browser Back from IntroPage | `popstate` → `page='landing'` ✅ |
+| Browser Forward | `popstate` → restores forward page ✅ |
+| In-app "← Back" on IntroPage | `window.history.back()` ✅ |
+| Direct open `/intro` | `pathname='/intro'` → `RESTORABLE_PAGES` → `intro` ✅ |
+| Refresh on IntroPage | `history.state.page='intro'` → stays on intro ✅ |
+
+### Build result at M-19d
+- `✓ 309 modules, 8.47s, clean` ✅
+- Browser testing not available in this environment — logic verified by code trace ✅
 
 **Goal:** Confirm all M-13 + M-14 + M-15 UAT, then commit.
 

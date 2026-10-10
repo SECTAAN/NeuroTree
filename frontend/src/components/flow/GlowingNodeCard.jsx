@@ -11,9 +11,9 @@ export default function GlowingNodeCard({ node, onClose }) {
   const isLocked   = node.status === 'locked'
 
   const masteryColor =
-    mastery >= 70 ? '#00FFA3' :
-    mastery >  0  ? '#00F3FF' :
-                    'rgba(255,255,255,0.3)'
+    mastery >= 70 ? 'var(--nt-primary)'     :
+    mastery >  0  ? 'var(--nt-primary-lt)'  :
+                    'var(--nt-text-3)'
 
   return (
     <div
@@ -24,13 +24,16 @@ export default function GlowingNodeCard({ node, onClose }) {
       <button
         onClick={onClose}
         className="absolute top-3 right-3 w-6 h-6 rounded-lg glass-1
-          text-white/30 hover:text-white/70 text-xs transition-colors flex items-center justify-center"
+          text-xs transition-colors flex items-center justify-center"
+        style={{ color: 'var(--nt-text-3)' }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-text)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
       >
         ✕
       </button>
 
       {/* Title */}
-      <h3 className="text-sm font-semibold text-white/90 pr-6 mb-1 leading-tight">
+      <h3 className="text-sm font-semibold pr-6 mb-1 leading-tight" style={{ color: 'var(--nt-text)' }}>
         {node.label}
       </h3>
 
@@ -38,9 +41,9 @@ export default function GlowingNodeCard({ node, onClose }) {
       <span
         className="inline-block text-xs px-2 py-0.5 rounded-full mb-3"
         style={{
-          background: isLocked ? 'rgba(255,255,255,0.06)' : 'rgba(0,243,255,0.08)',
-          color: isLocked ? 'rgba(255,255,255,0.3)' : masteryColor,
-          border: `1px solid ${isLocked ? 'rgba(255,255,255,0.08)' : 'rgba(0,243,255,0.2)'}`,
+          background: isLocked ? 'var(--nt-bg-3)' : 'rgba(53,78,71,0.10)',
+          color:      isLocked ? 'var(--nt-text-3)' : masteryColor,
+          border:     `1px solid ${isLocked ? 'var(--nt-border)' : 'rgba(53,78,71,0.25)'}`,
         }}
       >
         {isLocked ? '🔒 Locked' : mastery >= 100 ? '🌟 Mastered' : mastery >= 70 ? '🔓 Bright' : '💡 Available'}
@@ -49,17 +52,16 @@ export default function GlowingNodeCard({ node, onClose }) {
       {/* Mastery bar */}
       {!isLocked && (
         <div className="mb-4">
-          <div className="flex justify-between text-xs text-white/40 mb-1.5">
+          <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--nt-text-3)' }}>
             <span>Mastery</span>
             <span style={{ color: masteryColor }}>{mastery.toFixed(1)}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--nt-bg-3)' }}>
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: `${mastery}%`,
-                background: `linear-gradient(90deg, ${masteryColor}, rgba(77,124,254,0.6))`,
-                boxShadow: `0 0 8px ${masteryColor}44`,
+                background: `linear-gradient(90deg, ${masteryColor}, var(--nt-coral))`,
               }}
             />
           </div>
@@ -70,17 +72,16 @@ export default function GlowingNodeCard({ node, onClose }) {
       {!isLocked && (
         <div className="flex gap-2">
           <button
-            className="flex-1 btn-liquid py-2 text-xs text-white/60"
+            className="flex-1 nt-btn-secondary py-2 text-xs"
             onClick={onClose}
           >
             Review
           </button>
           <button
-            className="flex-1 btn-liquid py-2 text-xs font-medium"
-            style={{ borderColor: 'rgba(0,243,255,0.35)', boxShadow: '0 0 10px rgba(0,243,255,0.1)' }}
+            className="flex-1 nt-btn-primary py-2 text-xs font-medium"
             onClick={() => { openQuiz(node); onClose() }}
           >
-            Start Quiz ⚡
+            Start Quiz →
           </button>
         </div>
       )}

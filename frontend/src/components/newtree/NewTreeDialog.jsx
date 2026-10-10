@@ -352,11 +352,10 @@ export default function NewTreeDialog({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(14px)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 nt-modal-backdrop"
       onClick={handleBackdropClick}
     >
-      {/* ── Main modal ─────────────────────────────────────────────────── */}
+      {/* Main modal */}
       <div
         className="glass-3 rounded-3xl w-full max-w-lg flex flex-col animate-[cardIn_0.25s_ease_forwards]
           max-h-[90vh] overflow-hidden"
@@ -364,15 +363,17 @@ export default function NewTreeDialog({ onClose }) {
         {/* Header */}
         <div className="flex items-start justify-between px-7 pt-7 pb-0 flex-shrink-0">
           <div>
-            <h1 className="text-base font-semibold text-white/90">Create New Tree</h1>
-            <p className="text-xs text-white/35 mt-0.5">Start a new personalized learning journey.</p>
+            <h1 className="text-base font-semibold" style={{ color: 'var(--nt-text)' }}>Create New Tree</h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--nt-text-3)' }}>Start a new personalized learning journey.</p>
           </div>
           <button
             onClick={requestClose}
             disabled={isProcessing}
-            className="w-7 h-7 rounded-xl glass-1 flex items-center justify-center
-              text-white/30 hover:text-white/70 text-xs transition-colors
-              disabled:opacity-30 disabled:cursor-not-allowed ml-4 flex-shrink-0"
+            className="clay-icon w-7 h-7 rounded-xl flex items-center justify-center
+              text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed ml-4 flex-shrink-0"
+            style={{ color: 'var(--nt-text-3)' }}
+            onMouseEnter={(e) => { if (!isProcessing) e.currentTarget.style.color = 'var(--nt-text)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
           >
             ✕
           </button>
@@ -424,27 +425,23 @@ export default function NewTreeDialog({ onClose }) {
 
         {/* Footer actions */}
         {processingState === 'idle' && (
-          <div className="flex items-center justify-between gap-3 px-7 py-5 flex-shrink-0"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+          <div
+            className="flex items-center justify-between gap-3 px-7 py-5 flex-shrink-0"
+            style={{ borderTop: '1px solid var(--nt-border)' }}
           >
-            {/* Left: Back / Cancel */}
             <button
               onClick={step === 1 ? requestClose : () => setStep(1)}
-              className="btn-liquid px-5 py-2 text-sm text-white/50"
+              className="btn-liquid px-5 py-2 text-sm"
+              style={{ color: 'var(--nt-text-2)' }}
             >
               {step === 1 ? 'Cancel' : '← Back'}
             </button>
 
-            {/* Right: Next / Generate */}
             {step === 1 && (
               <button
                 onClick={() => setStep(2)}
                 disabled={!metadataValid}
-                className="btn-liquid px-6 py-2 text-sm font-medium disabled:opacity-35"
-                style={metadataValid ? {
-                  borderColor: 'rgba(0,243,255,0.4)',
-                  boxShadow:   '0 0 12px rgba(0,243,255,0.12)',
-                } : {}}
+                className="nt-btn-primary px-6 py-2 text-sm font-medium disabled:opacity-35"
               >
                 Next: Add Source →
               </button>
@@ -453,39 +450,34 @@ export default function NewTreeDialog({ onClose }) {
               <button
                 onClick={handleGenerate}
                 disabled={!sourceValid}
-                className="btn-liquid px-6 py-2 text-sm font-medium disabled:opacity-35"
-                style={sourceValid ? {
-                  borderColor: 'rgba(0,243,255,0.4)',
-                  boxShadow:   '0 0 12px rgba(0,243,255,0.12)',
-                } : {}}
+                className="nt-btn-primary px-6 py-2 text-sm font-medium disabled:opacity-35"
               >
-                Generate Skill Tree ⚡
+                Generate Skill Tree →
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* ── Discard confirmation overlay ──────────────────────────────── */}
+      {/* Discard confirmation overlay */}
       {confirmDiscard && (
         <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+          className="absolute inset-0 flex items-center justify-center nt-modal-backdrop"
         >
           <div className="glass-3 rounded-2xl p-7 max-w-sm w-full mx-4 animate-[cardIn_0.2s_ease_forwards]">
-            <h3 className="text-sm font-semibold text-white/90 mb-1">Discard this Tree?</h3>
-            <p className="text-xs text-white/40 mb-6">Your progress will be lost.</p>
+            <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--nt-text)' }}>Discard this Tree?</h3>
+            <p className="text-xs mb-6" style={{ color: 'var(--nt-text-3)' }}>Your progress will be lost.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDiscard(false)}
-                className="flex-1 btn-liquid py-2.5 text-sm text-white/60"
+                className="flex-1 btn-liquid py-2.5 text-sm"
+                style={{ color: 'var(--nt-text-2)' }}
               >
                 Keep Editing
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 btn-liquid py-2.5 text-sm text-red-400/80"
-                style={{ borderColor: 'rgba(239,68,68,0.25)' }}
+                className="flex-1 nt-btn-coral py-2.5 text-sm"
               >
                 Discard
               </button>

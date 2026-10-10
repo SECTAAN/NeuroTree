@@ -6,11 +6,11 @@ import QuizModal           from '../components/quiz/QuizModal'
 import CollapsibleHeader   from '../components/layout/CollapsibleHeader'
 import HamburgerSidebar    from '../components/layout/HamburgerSidebar'
 
-// ── Priority colour map for NT-04 recommendation chip ────────────────────────
+// ── Priority style map for NT-04 recommendation chip — skeuomorphic ──────────
 const PRIORITY_STYLE = {
-  high:   { border: 'rgba(0,243,255,0.35)',  text: 'rgba(0,243,255,0.90)',  glow: 'rgba(0,243,255,0.12)' },
-  medium: { border: 'rgba(77,124,254,0.35)', text: 'rgba(77,124,254,0.90)', glow: 'rgba(77,124,254,0.10)' },
-  low:    { border: 'rgba(148,163,184,0.25)', text: 'rgba(148,163,184,0.70)', glow: 'transparent' },
+  high:   { color: 'var(--nt-coral)',     border: 'rgba(219,98,113,0.35)' },
+  medium: { color: 'var(--nt-primary)',   border: 'rgba(53,78,71,0.30)'   },
+  low:    { color: 'var(--nt-text-3)',    border: 'var(--nt-border)'       },
 }
 
 // ── NT-04 Recommendation Chip ────────────────────────────────────────────────
@@ -19,7 +19,7 @@ function RecommendationChip({ rec, graphNodes, onGoTo, onDismiss }) {
 
   const style      = PRIORITY_STYLE[rec.priority] ?? PRIORITY_STYLE.medium
   const targetNode = graphNodes.find((n) => n.id === rec.target_chunk_id)
-  const nodeReady  = !!targetNode                          // P1-5: node must exist in graph
+  const nodeReady  = !!targetNode
   const isLocked   = nodeReady && targetNode.status === 'locked'
   const hasTarget  = !!rec.target_chunk_id && !!rec.target_chunk_title
 
@@ -27,56 +27,55 @@ function RecommendationChip({ rec, graphNodes, onGoTo, onDismiss }) {
 
   return (
     <div
-      className="mx-3 mb-1 rounded-2xl flex items-center gap-3 px-4 py-2.5 flex-shrink-0"
-      style={{
-        background:   `rgba(15,17,20,0.55)`,
-        backdropFilter: 'blur(12px)',
-        border:       `1px solid ${style.border}`,
-        boxShadow:    `0 0 16px ${style.glow}`,
-      }}
+      className="mx-3 mb-1 rounded-2xl flex items-center gap-3 px-4 py-2.5 flex-shrink-0 clay-card"
+      style={{ border: `1px solid ${style.border}` }}
     >
       {/* Pulse dot */}
       <span
         className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse"
-        style={{ background: style.text }}
+        style={{ background: style.color }}
       />
 
       {/* Text block */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-[11px] text-white/40 uppercase tracking-widest">AI recommends</span>
+          <span className="text-[11px] uppercase tracking-widest" style={{ color: 'var(--nt-text-3)' }}>
+            AI recommends
+          </span>
           {pct > 0 && (
-            <span className="text-[10px] text-white/25">{pct}% complete</span>
+            <span className="text-[10px]" style={{ color: 'var(--nt-text-3)' }}>{pct}% complete</span>
           )}
         </div>
         {hasTarget ? (
-          <p className="text-xs font-medium truncate" style={{ color: style.text }}>
+          <p className="text-xs font-medium truncate" style={{ color: style.color }}>
             {rec.target_chunk_title}
           </p>
         ) : (
-          <p className="text-xs text-white/40 truncate">{rec.reason || 'Review your progress'}</p>
+          <p className="text-xs truncate" style={{ color: 'var(--nt-text-3)' }}>
+            {rec.reason || 'Review your progress'}
+          </p>
         )}
         {rec.reason && hasTarget && (
-          <p className="text-[10px] text-white/25 truncate">{rec.reason}</p>
+          <p className="text-[10px] truncate" style={{ color: 'var(--nt-text-3)' }}>{rec.reason}</p>
         )}
       </div>
 
-      {/* Go arrow — disabled if target not yet in graph, or locked */}
+      {/* Go arrow */}
       {hasTarget && (
         <button
           onClick={nodeReady && !isLocked ? () => onGoTo(targetNode) : undefined}
           title={
-            !nodeReady  ? 'Graph is updating…'          :
-            isLocked    ? 'Unlock prerequisites first'  :
+            !nodeReady  ? 'Graph is updating…'         :
+            isLocked    ? 'Unlock prerequisites first' :
                           `Study "${rec.target_chunk_title}"`
           }
           disabled={!nodeReady || isLocked}
           className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg transition-all duration-200
             disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
-            background: (!nodeReady || isLocked) ? 'transparent' : `rgba(0,243,255,0.08)`,
-            border:     `1px solid ${(!nodeReady || isLocked) ? 'rgba(148,163,184,0.2)' : style.border}`,
-            color:      (!nodeReady || isLocked) ? 'rgba(148,163,184,0.4)' : style.text,
+            background: (!nodeReady || isLocked) ? 'transparent' : 'rgba(53,78,71,0.08)',
+            border:     `1px solid ${(!nodeReady || isLocked) ? 'var(--nt-border)' : style.border}`,
+            color:      (!nodeReady || isLocked) ? 'var(--nt-text-3)' : style.color,
           }}
         >
           {isLocked ? '🔒' : 'Go →'}
@@ -87,7 +86,10 @@ function RecommendationChip({ rec, graphNodes, onGoTo, onDismiss }) {
       <button
         onClick={onDismiss}
         className="flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center
-          text-white/20 hover:text-white/50 text-[10px] transition-colors"
+          text-[10px] transition-colors"
+        style={{ color: 'var(--nt-text-3)' }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-text)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
         title="Dismiss"
         aria-label="Dismiss recommendation"
       >
@@ -239,34 +241,46 @@ export default function SkillTree() {
       {/* ── Canvas ──────────────────────────────────────────────────────── */}
       <div className="flex-1 relative overflow-hidden rounded-2xl mx-3 mb-3">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-app">
-            <div className="glass-3 rounded-2xl px-8 py-6 text-center">
-              <div className="text-xl mb-2 animate-pulse">⚡</div>
-              <p className="text-sm text-white/50 font-mono tracking-widest">INITIALISING CIRCUIT…</p>
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-app">
+              <div className="glass-3 rounded-2xl px-8 py-6 text-center">
+                <div
+                  className="w-10 h-10 rounded-full mx-auto mb-4 organic-pulse"
+                  style={{ border: '2px solid var(--nt-primary)', borderTopColor: 'var(--nt-coral)' }}
+                />
+                <p className="text-sm font-medium" style={{ color: 'var(--nt-text-2)' }}>
+                  Initialising circuit…
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-app">
-            <div className="glass-3 rounded-2xl px-8 py-6 text-center max-w-sm">
-              <p className="text-white/60 text-sm mb-2">Sirkuit terputus</p>
-              <p className="text-white/30 text-xs mb-4">{error}</p>
-              <p className="text-white/20 text-xs">
-                Pastikan backend berjalan di <code className="text-accent-cyan">localhost:8000</code>
-              </p>
+          )}
+  
+          {error && !loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-app">
+              <div className="glass-3 rounded-2xl px-8 py-6 text-center max-w-sm">
+                <p className="text-sm mb-2 font-medium" style={{ color: 'var(--nt-coral)' }}>
+                  Circuit disconnected
+                </p>
+                <p className="text-xs mb-4" style={{ color: 'var(--nt-text-3)' }}>{error}</p>
+                <p className="text-xs" style={{ color: 'var(--nt-text-3)' }}>
+                  Ensure backend is running at{' '}
+                  <code style={{ color: 'var(--nt-primary)', fontFamily: 'monospace' }}>localhost:8000</code>
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {!loading && !error && graphData?.nodes?.length === 0 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-app">
-            <div className="glass-3 rounded-2xl px-8 py-6 text-center max-w-sm">
-              <p className="text-white/60 text-sm mb-2">Circuit Empty</p>
-              <p className="text-white/30 text-xs">Use ingestion to load your first document.</p>
+          )}
+  
+          {!loading && !error && graphData?.nodes?.length === 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-app">
+              <div className="glass-3 rounded-2xl px-8 py-6 text-center max-w-sm">
+                <p className="text-sm mb-2 font-medium" style={{ color: 'var(--nt-text-2)' }}>
+                  Circuit Empty
+                </p>
+                <p className="text-xs" style={{ color: 'var(--nt-text-3)' }}>
+                  Use ingestion to load your first document.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         <SkillTreeCanvas graphData={graphData} />
       </div>

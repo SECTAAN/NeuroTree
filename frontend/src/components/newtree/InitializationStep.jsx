@@ -8,47 +8,47 @@ export default function InitializationStep({ metadata, onChange }) {
 
   return (
     <div className="animate-[fadeUp_0.3s_ease_forwards]">
-      <h2 className="text-base font-semibold text-white/90 mb-1">Initialize Your Tree</h2>
-      <p className="text-sm text-white/40 mb-6">Define what you want to learn and why.</p>
+      <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--nt-text)' }}>
+        Initialize Your Tree
+      </h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--nt-text-3)' }}>
+        Define what you want to learn and why.
+      </p>
 
       {/* Tree Name */}
       <label className="block mb-5">
-        <span className="text-xs text-white/45 uppercase tracking-widest block mb-2">Tree Name</span>
+        <span className="nt-section-label block mb-2">Tree Name</span>
         <input
           type="text"
           value={treeName}
           onChange={(e) => onChange({ treeName: e.target.value })}
           placeholder="e.g. Computer Networks"
           maxLength={80}
-          className="w-full rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none
-            bg-white/5 border border-white/10 focus:border-cyan-400/40
-            placeholder:text-white/20 transition-colors"
-          style={{ caretColor: '#00F3FF' }}
+          className="nt-input w-full rounded-xl px-4 py-2.5 text-sm"
+          style={{ caretColor: 'var(--nt-coral)' }}
         />
       </label>
 
       {/* Learning Goal */}
       <label className="block mb-2">
-        <span className="text-xs text-white/45 uppercase tracking-widest block mb-2">Learning Goal</span>
+        <span className="nt-section-label block mb-2">Learning Goal</span>
         <textarea
           value={learningGoal}
           onChange={(e) => onChange({ learningGoal: e.target.value })}
           placeholder="What do you want to achieve?"
           maxLength={200}
           rows={3}
-          className="w-full rounded-xl px-4 py-3 text-sm text-white/90 outline-none resize-none
-            bg-white/5 border border-white/10 focus:border-cyan-400/40
-            placeholder:text-white/20 transition-colors"
-          style={{ caretColor: '#00F3FF' }}
+          className="nt-input w-full rounded-xl px-4 py-3 text-sm resize-none"
+          style={{ caretColor: 'var(--nt-coral)' }}
         />
-        <span className="text-xs text-white/20 float-right mt-1">
+        <span className="text-xs float-right mt-1" style={{ color: 'var(--nt-text-muted)' }}>
           {learningGoal.length}/200
         </span>
       </label>
 
       {/* Inline hint if empty */}
       {!isValid && (treeName.length > 0 || learningGoal.length > 0) && (
-        <p className="text-xs text-white/30 mt-3 clear-right">
+        <p className="text-xs mt-3 clear-right" style={{ color: 'var(--nt-coral)' }}>
           Please fill in both fields to continue.
         </p>
       )}

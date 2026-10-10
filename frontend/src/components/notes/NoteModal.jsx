@@ -71,50 +71,34 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pb-3 sm:pb-0"
-      style={{ background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(14px)' }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pb-3 sm:pb-0 nt-modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && !confirmDelete && onClose()}
     >
       <div
-        className="w-full flex flex-col rounded-3xl overflow-hidden"
-        style={{
-          maxWidth: 460,
-          background: 'rgba(15,17,21,0.97)',
-          backdropFilter: 'blur(28px)',
-          WebkitBackdropFilter: 'blur(28px)',
-          border: '1px solid rgba(191,0,255,0.18)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(191,0,255,0.08)',
-          animation: 'cardIn 0.22s ease forwards',
-        }}
+        className="w-full flex flex-col rounded-3xl overflow-hidden glass-3"
+        style={{ maxWidth: 460, animation: 'cardIn 0.22s ease forwards' }}
       >
-        {/* ── Header ──────────────────────────────────────────────────────── */}
+        {/* Header */}
         <div
           className="flex items-start justify-between px-5 pt-5 pb-4"
-          style={{ borderBottom: '1px solid rgba(191,0,255,0.12)' }}
+          style={{ borderBottom: '1px solid var(--nt-border)' }}
         >
           <div className="flex items-center gap-3">
-            {/* Wi-Fi icon */}
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'rgba(191,0,255,0.08)',
-                border: '1px solid rgba(191,0,255,0.25)',
-                boxShadow: '0 0 16px rgba(191,0,255,0.12)',
-              }}
+              className="clay-icon w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             >
               <WifiHeaderSvg />
             </div>
             <div>
               <p
                 className="text-[10px] tracking-widest uppercase mb-0.5"
-                style={{ color: 'rgba(191,0,255,0.7)' }}
+                style={{ color: 'var(--nt-primary)' }}
               >
                 {isEditing ? 'Edit Note' : 'Add Knowledge Note'}
               </p>
-              {/* Connection breadcrumb */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <ConnectionPill label={sourceLabel} color="source" />
-                <span className="text-white/20 text-xs">→</span>
+                <span className="text-xs" style={{ color: 'var(--nt-text-3)' }}>→</span>
                 <ConnectionPill label={targetLabel} color="target" />
               </div>
             </div>
@@ -123,14 +107,17 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="w-7 h-7 rounded-xl glass-1 flex items-center justify-center text-white/30
-              hover:text-white/70 text-xs transition-colors flex-shrink-0 ml-2 mt-0.5"
+            className="clay-icon w-7 h-7 rounded-xl flex items-center justify-center
+              text-xs transition-colors flex-shrink-0 ml-2 mt-0.5"
+            style={{ color: 'var(--nt-text-3)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-text)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
           >
             ✕
           </button>
         </div>
 
-        {/* ── Textarea ────────────────────────────────────────────────────── */}
+        {/* Textarea */}
         <div className="px-5 pt-4 pb-3">
           <textarea
             ref={textareaRef}
@@ -138,49 +125,42 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
             onChange={(e) => setText(e.target.value.slice(0, MAX_LEN))}
             placeholder="Write your thought about this connection…"
             rows={5}
-            className="w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none
-              placeholder:text-white/20 transition-colors"
+            className="nt-input w-full px-4 py-3 text-sm resize-none"
             style={{
-              background:   'rgba(255,255,255,0.04)',
-              border:       `1px solid ${text.length > 0 ? 'rgba(191,0,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              color:        'rgba(240,242,245,0.85)',
-              lineHeight:   1.7,
-              fontFamily:   '"Inter", system-ui, sans-serif',
+              lineHeight: 1.7,
+              borderColor: text.length > 0 ? 'var(--nt-primary-lt)' : 'var(--nt-border-2)',
+              color: 'var(--nt-text)',
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(191,0,255,0.5)' }}
-            onBlur={(e)  => { e.currentTarget.style.borderColor = text.length > 0 ? 'rgba(191,0,255,0.3)' : 'rgba(255,255,255,0.08)' }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--nt-primary)' }}
+            onBlur={(e)  => { e.currentTarget.style.borderColor = text.length > 0 ? 'var(--nt-primary-lt)' : 'var(--nt-border-2)' }}
           />
 
-          {/* Char counter + progress micro-bar */}
           <div className="flex items-center justify-between mt-2 px-1">
-            <div className="flex-1 h-0.5 rounded-full bg-white/5 mr-3 overflow-hidden">
+            <div className="flex-1 h-0.5 rounded-full mr-3 overflow-hidden" style={{ background: 'var(--nt-bg-3)' }}>
               <div
                 className="h-full rounded-full transition-all duration-200"
                 style={{
                   width: `${charRatio * 100}%`,
-                  background: charRatio > 0.9
-                    ? 'rgba(255,80,80,0.6)'
-                    : 'rgba(191,0,255,0.5)',
+                  background: charRatio > 0.9 ? 'var(--nt-coral)' : 'var(--nt-primary)',
                 }}
               />
             </div>
-            <span className="text-[10px] font-mono" style={{ color: charColor }}>
+            <span className="text-[10px]" style={{ color: 'var(--nt-text-3)' }}>
               {text.length}/{MAX_LEN}
             </span>
           </div>
         </div>
 
-        {/* ── Footer actions ───────────────────────────────────────────────── */}
+        {/* Footer */}
         <div className="px-5 pb-5 flex flex-col gap-3">
 
-          {/* API error banner — shown when backend save/delete failed */}
           {saveError && (
             <div
               className="rounded-2xl px-4 py-3 text-xs flex items-center gap-2"
               style={{
-                background: 'rgba(255,80,80,0.07)',
-                border: '1px solid rgba(255,80,80,0.2)',
-                color: 'rgba(255,120,120,0.9)',
+                background: 'rgba(219,98,113,0.07)',
+                border: '1px solid rgba(219,98,113,0.25)',
+                color: 'var(--nt-coral)',
               }}
             >
               <span style={{ fontSize: 14 }}>⚠</span>
@@ -188,20 +168,22 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
             </div>
           )}
 
-          {/* Confirm-delete banner */}
           {confirmDelete && (
             <div
               className="rounded-2xl px-4 py-3 text-xs flex items-center gap-3"
               style={{
-                background: 'rgba(255,80,80,0.07)',
-                border: '1px solid rgba(255,80,80,0.2)',
-                color: 'rgba(255,120,120,0.9)',
+                background: 'rgba(219,98,113,0.07)',
+                border: '1px solid rgba(219,98,113,0.25)',
+                color: 'var(--nt-coral)',
               }}
             >
               <span className="flex-1">Delete this note permanently?</span>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-white/40 hover:text-white/70 transition-colors"
+                className="transition-colors"
+                style={{ color: 'var(--nt-text-3)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-text)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
               >
                 Cancel
               </button>
@@ -209,16 +191,14 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
                 onClick={handleDelete}
                 disabled={deleting}
                 className="font-medium transition-colors"
-                style={{ color: 'rgba(255,80,80,0.9)' }}
+                style={{ color: 'var(--nt-coral)' }}
               >
                 {deleting ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           )}
 
-          {/* Primary actions */}
           <div className="flex gap-2">
-            {/* Delete button — only shown for existing notes */}
             {isEditing && !confirmDelete && (
               <button
                 onClick={handleDelete}
@@ -226,19 +206,17 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
                 aria-label="Delete note"
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 flex-shrink-0"
                 style={{
-                  background: 'rgba(255,80,80,0.06)',
-                  border: '1px solid rgba(255,80,80,0.15)',
-                  color: 'rgba(255,100,100,0.6)',
+                  background: 'rgba(219,98,113,0.07)',
+                  border: '1px solid rgba(219,98,113,0.20)',
+                  color: 'var(--nt-coral)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,80,80,0.12)'
-                  e.currentTarget.style.color      = 'rgba(255,100,100,0.9)'
-                  e.currentTarget.style.borderColor = 'rgba(255,80,80,0.3)'
+                  e.currentTarget.style.background  = 'rgba(219,98,113,0.13)'
+                  e.currentTarget.style.borderColor = 'rgba(219,98,113,0.35)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,80,80,0.06)'
-                  e.currentTarget.style.color      = 'rgba(255,100,100,0.6)'
-                  e.currentTarget.style.borderColor = 'rgba(255,80,80,0.15)'
+                  e.currentTarget.style.background  = 'rgba(219,98,113,0.07)'
+                  e.currentTarget.style.borderColor = 'rgba(219,98,113,0.20)'
                 }}
               >
                 <TrashSvg />
@@ -247,14 +225,8 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
 
             <button
               onClick={onClose}
-              className="flex-1 h-10 rounded-xl text-sm transition-all duration-200"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(240,242,245,0.4)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(240,242,245,0.7)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(240,242,245,0.4)' }}
+              className="flex-1 h-10 rounded-xl text-sm transition-all duration-200 btn-liquid"
+              style={{ color: 'var(--nt-text-2)' }}
             >
               Cancel
             </button>
@@ -262,15 +234,7 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
             <button
               onClick={handleSave}
               disabled={!text.trim() || saving}
-              className="flex-1 h-10 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
-              style={{
-                background: text.trim()
-                  ? 'linear-gradient(135deg, rgba(191,0,255,0.2), rgba(130,0,200,0.15))'
-                  : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${text.trim() ? 'rgba(191,0,255,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                color: text.trim() ? 'rgba(220,130,255,0.95)' : 'rgba(255,255,255,0.2)',
-                boxShadow: text.trim() ? '0 0 18px rgba(191,0,255,0.15)' : undefined,
-              }}
+              className="flex-1 h-10 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed nt-btn-primary"
             >
               {saving ? 'Saving…' : isEditing ? 'Update ◉' : 'Save ◉'}
             </button>
@@ -285,9 +249,9 @@ export default function NoteModal({ context, onSave, onDelete, onClose }) {
 function WifiHeaderSvg() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M2.5 6.5 C5 4 11 4 13.5 6.5" stroke="rgba(191,0,255,0.85)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M4.5 9 C6 7.5 10 7.5 11.5 9"   stroke="rgba(191,0,255,0.85)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <circle cx="8" cy="12.5" r="1.5" fill="rgba(191,0,255,0.85)" />
+      <path d="M2.5 6.5 C5 4 11 4 13.5 6.5" stroke="var(--nt-primary)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <path d="M4.5 9 C6 7.5 10 7.5 11.5 9"   stroke="var(--nt-primary)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <circle cx="8" cy="12.5" r="1.5" fill="var(--nt-primary)" />
     </svg>
   )
 }
@@ -305,8 +269,8 @@ function TrashSvg() {
 
 function ConnectionPill({ label, color }) {
   const styles = {
-    source: { bg: 'rgba(191,0,255,0.07)', border: 'rgba(191,0,255,0.2)', text: 'rgba(220,130,255,0.85)' },
-    target: { bg: 'rgba(77,124,254,0.07)', border: 'rgba(77,124,254,0.2)', text: 'rgba(130,160,255,0.85)' },
+    source: { bg: 'rgba(53,78,71,0.08)',   border: 'rgba(53,78,71,0.20)',   text: 'var(--nt-primary)'  },
+    target: { bg: 'rgba(219,98,113,0.07)', border: 'rgba(219,98,113,0.20)', text: 'var(--nt-coral)'    },
   }[color]
   return (
     <span

@@ -43,40 +43,40 @@ export default function NeonLampNode({ data, selected }) {
   const handleStyle = {
     width: 6, height: 6,
     borderRadius: '50%',
-    border: `1.5px solid ${isLocked ? 'rgba(255,255,255,0.10)' : 'rgba(0,220,240,0.45)'}`,
-    background: 'var(--bg-primary, #111315)',
+    border: `1.5px solid ${isLocked ? 'rgba(53,78,71,0.15)' : 'rgba(78,114,103,0.55)'}`,
+    background: 'var(--nt-bg, #faf2e3)',
   }
 
-  // ── Colour palette driven by mastery ─────────────────────────────────────
-  // Locked → grey  |  low → faint cyan  |  mastered → warm amber-white
+  // ── Colour palette driven by mastery — warm organic tones ────────────────
+  // Locked → muted grey-green  |  low → soft teal  |  mastered → rich primary green
   const glassColor = isLocked
-    ? 'rgba(120,130,145,0.25)'
+    ? 'rgba(100,120,110,0.18)'
     : mastery >= 0.8
-      ? `rgba(255,230,130,${0.35 + mastery * 0.45})`   // warm yellow-white at high mastery
-      : `rgba(0,220,240,${0.20 + mastery * 0.50})`     // cyan at lower mastery
+      ? `rgba(53,78,71,${0.30 + mastery * 0.40})`   // deep green at high mastery
+      : `rgba(78,114,103,${0.18 + mastery * 0.40})`  // mid teal at lower mastery
 
   const glassHighlight = isLocked
-    ? 'rgba(255,255,255,0.06)'
+    ? 'rgba(255,255,255,0.05)'
     : mastery >= 0.8
-      ? `rgba(255,245,200,${0.4 + mastery * 0.3})`
-      : `rgba(180,240,255,${0.25 + mastery * 0.35})`
+      ? `rgba(139,187,146,${0.35 + mastery * 0.25})`
+      : `rgba(200,230,220,${0.20 + mastery * 0.30})`
 
   const filamentColor = isLocked
-    ? 'rgba(255,255,255,0.08)'
+    ? 'rgba(53,78,71,0.12)'
     : mastery >= 0.8
-      ? `rgba(255,220,80,${0.6 + mastery * 0.4})`
-      : `rgba(0,230,255,${0.4 + mastery * 0.5})`
+      ? `rgba(53,78,71,${0.6 + mastery * 0.4})`
+      : `rgba(78,114,103,${0.4 + mastery * 0.5})`
 
-  // drop-shadow glow: cyan for normal, warm amber for mastered
+  // drop-shadow glow: warm teal for normal, rich green for mastered
   const shadowColor = mastery >= 0.8
-    ? `rgba(255,200,60,${mastery * 0.85})`
-    : `rgba(0,220,240,${mastery * 0.9})`
+    ? `rgba(53,78,71,${mastery * 0.80})`
+    : `rgba(78,114,103,${mastery * 0.80})`
 
   const glowFilter = isLocked
     ? 'none'
-    : `drop-shadow(0 0 ${3 + mastery * 10}px ${shadowColor}) drop-shadow(0 0 ${1 + mastery * 5}px ${shadowColor})`
+    : `drop-shadow(0 0 ${3 + mastery * 8}px ${shadowColor}) drop-shadow(0 0 ${1 + mastery * 4}px ${shadowColor})`
 
-  const baseStroke = isLocked ? 'rgba(120,130,145,0.35)' : 'rgba(160,200,210,0.5)'
+  const baseStroke = isLocked ? 'rgba(100,120,110,0.30)' : 'rgba(78,114,103,0.45)'
 
   return (
     <>
@@ -107,15 +107,15 @@ export default function NeonLampNode({ data, selected }) {
           />
         )}
 
-        {/* Selected / active ring — outside the SVG */}
+        {/* Selected / active ring */}
         {(selected || cardOpen) && !isLocked && (
           <div
             className="absolute pointer-events-none"
             style={{
               inset: '-6px',
               borderRadius: '50%',
-              border: `1.5px solid ${mastery >= 0.8 ? 'rgba(255,210,60,0.75)' : 'rgba(0,220,240,0.75)'}`,
-              boxShadow: `0 0 10px ${shadowColor}`,
+              border: `1.5px solid ${mastery >= 0.8 ? 'rgba(53,78,71,0.80)' : 'rgba(78,114,103,0.75)'}`,
+              boxShadow: `0 0 8px ${shadowColor}`,
             }}
           />
         )}
@@ -155,7 +155,7 @@ export default function NeonLampNode({ data, selected }) {
               Z
             "
             fill={glassColor}
-            stroke={isLocked ? 'rgba(120,130,145,0.3)' : `rgba(0,220,240,${0.15 + mastery * 0.35})`}
+              stroke={isLocked ? 'rgba(100,120,110,0.22)' : `rgba(78,114,103,${0.15 + mastery * 0.35})`}
             strokeWidth="1"
           />
 
@@ -184,8 +184,8 @@ export default function NeonLampNode({ data, selected }) {
                 Z
               "
               fill={mastery >= 0.8
-                ? `rgba(255,230,100,${mastery * 0.35})`
-                : `rgba(0,210,230,${mastery * 0.25})`}
+                ? `rgba(53,78,71,${mastery * 0.28})`
+                : `rgba(78,114,103,${mastery * 0.22})`}
             />
           )}
 

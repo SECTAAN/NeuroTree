@@ -3,23 +3,16 @@ import { masterLightApi } from '../../services/api'
 
 /**
  * MasterLightModal — M-5: 3-question Master Light assessment.
- *
- * Session flow (question_index 0 → 1 → 2):
- *   loading  → fetching question from /master-light/generate
- *   question → user types answer and submits
- *   interim  → Q0/Q1 feedback (is_final=false): show score, load next question
- *   result   → Q2 (is_final=true): show committed master_light_mastery
- *   error    → generic error
- *   cooldown → HTTP 429 rate-limit
- *
- * Rules (M-5 spec):
- *   - Only opens when master_light_unlocked=true (enforced by MasterLightNode).
- *   - master_light_mastery is committed only on Q2 (is_final=true).
- *   - Does NOT alter normal knowledge-node quiz behavior.
- *   - onMasteryUpdate is called with (nodeId, master_light_mastery) on is_final.
+ * Gold accent kept (warm gold #d4a017 / #e8c547) — distinct from quiz palette.
+ * All neon/white replaced with --nt-* tokens or explicit gold values.
  */
 
 const TOTAL_QUESTIONS = 3
+
+// Gold accent values — Master Light stays gold in both themes
+const GOLD       = '#d4a017'
+const GOLD_LT    = '#e8c547'
+const GOLD_ALPHA = 'rgba(212,160,23,0.50)'
 
 export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
   const [questionIndex, setQuestionIndex] = useState(0)
@@ -60,11 +53,7 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
 
   useEffect(() => {
     const nodeId = node?.id
-    if (!nodeId) {
-      setErrMsg(`node_id is undefined. Received node: ${JSON.stringify(node)}`)
-      setStep('error')
-      return
-    }
+    if (!nodeId) { setErrMsg(`node_id is undefined.`); setStep('error'); return }
     setQuestionIndex(0)
     setInterimData(null)
     setFinalResult(null)
@@ -115,16 +104,10 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
     : step === 'result' ? TOTAL_QUESTIONS
     : questionIndex + 1
 
-  const mlMastery   = finalResult?.master_light_mastery ?? 0
-  const masteryColor =
-    mlMastery >= 70 ? '#FFD700' :
-    mlMastery >  0  ? '#FFE87A' :
-                      'rgba(255,255,255,0.4)'
-
-  const interimScoreColor =
-    (interimData?.ai_score ?? 0) >= 70 ? '#FFD700' :
-    (interimData?.ai_score ?? 0) >  0  ? '#FFE87A' :
-                                         'rgba(255,255,255,0.4)'
+  const mlMastery    = finalResult?.master_light_mastery ?? 0
+  const masteryColor = mlMastery >= 70 ? GOLD : mlMastery > 0 ? GOLD_LT : 'var(--nt-text-3)'
+  const interimColor = (interimData?.ai_score ?? 0) >= 70 ? GOLD :
+                       (interimData?.ai_score ?? 0) >  0  ? GOLD_LT : 'var(--nt-text-3)'
 
   function ProgressDots() {
     return (
@@ -137,10 +120,7 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
               key={i}
               className="h-1 flex-1 rounded-full transition-all duration-500"
               style={{
-                background: isDone   ? '#FFD700'
-                          : isActive ? 'rgba(255,215,0,0.6)'
-                          :            'rgba(255,255,255,0.1)',
-                boxShadow: isActive ? '0 0 6px rgba(255,215,0,0.4)' : undefined,
+                background: isDone   ? GOLD : isActive ? GOLD_ALPHA : 'var(--nt-bg-3)',
               }}
             />
           )
@@ -151,37 +131,38 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(14px)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 nt-modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         className="glass-3 rounded-3xl p-7 w-full max-w-lg relative animate-[cardIn_0.25s_ease_forwards]"
         style={{
-          border: '1px solid rgba(255,210,40,0.25)',
-          boxShadow: '0 0 40px rgba(255,190,30,0.10)',
+          border: `1px solid rgba(212,160,23,0.22)`,
+          boxShadow: 'var(--nt-shadow-out)',
         }}
       >
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-7 h-7 rounded-xl glass-1 text-white/30
-            hover:text-white/70 text-xs transition-colors flex items-center justify-center"
+          className="absolute top-4 right-4 w-7 h-7 rounded-xl nt-card flex items-center justify-center text-xs transition-colors"
+          style={{ color: 'var(--nt-text-3)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = GOLD }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
         >
           ✕
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
-          <span style={{ color: 'rgba(255,210,40,0.8)', fontSize: 14 }}>✦</span>
-          <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(255,210,40,0.7)' }}>
+          <span style={{ color: GOLD, fontSize: 14 }}>✦</span>
+          <p className="nt-section-label" style={{ color: GOLD }}>
             Master Light · {node.label}
           </p>
         </div>
 
         {step !== 'error' && step !== 'cooldown' && (
           <div className="flex justify-end mb-1">
-            <p className="text-xs text-white/30 font-mono">
+            <p className="text-xs font-mono" style={{ color: 'var(--nt-text-3)' }}>
               {displayQuestionNumber}/{TOTAL_QUESTIONS}
             </p>
           </div>
@@ -192,9 +173,9 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
         {/* ── Loading ─────────────────────────────────────────────────────── */}
         {step === 'loading' && (
           <div className="py-10 text-center">
-            <div className="text-2xl mb-3 animate-pulse">✦</div>
-            <p className="text-sm text-white/40 font-mono tracking-widest">
-              GENERATING MASTER QUESTION…
+            <div className="nt-spinner mx-auto mb-4" style={{ borderTopColor: GOLD }} />
+            <p className="text-sm" style={{ color: 'var(--nt-text-3)' }}>
+              Generating Master question…
             </p>
           </div>
         )}
@@ -202,7 +183,7 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
         {/* ── Question ────────────────────────────────────────────────────── */}
         {step === 'question' && (
           <>
-            <h2 className="text-base font-medium text-white/90 mt-2 mb-6 leading-relaxed">
+            <h2 className="text-base font-medium mt-2 mb-6 leading-relaxed" style={{ color: 'var(--nt-text)' }}>
               {question}
             </h2>
             <textarea
@@ -211,20 +192,23 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
               placeholder="Tuliskan jawabanmu di sini…"
               rows={4}
               maxLength={1000}
-              className="w-full rounded-2xl px-4 py-3 text-sm text-white/85 outline-none resize-none
-                bg-white/5 border border-white/10 focus:border-yellow-400/40
-                placeholder:text-white/20 transition-colors mb-2"
+              className="nt-input w-full rounded-2xl px-4 py-3 text-sm resize-none mb-2"
+              style={{ caretColor: GOLD, borderColor: `rgba(212,160,23,0.20)` }}
             />
             <div className="flex justify-between items-center mb-5">
-              <span className="text-xs text-white/20">{answer.length}/1000</span>
+              <span className="text-xs" style={{ color: 'var(--nt-text-muted)' }}>{answer.length}/1000</span>
             </div>
             <button
               onClick={handleSubmit}
               disabled={!answer.trim() || submitting}
-              className="w-full btn-liquid py-3 text-sm font-medium disabled:opacity-40"
+              className="w-full py-3 text-sm font-medium rounded-[50px] disabled:opacity-40 transition-all"
               style={{
-                borderColor: answer.trim() ? 'rgba(255,210,40,0.45)' : undefined,
-                boxShadow:   answer.trim() ? '0 0 14px rgba(255,210,40,0.15)' : undefined,
+                background: GOLD,
+                color: '#fff',
+                boxShadow: answer.trim()
+                  ? `3px 3px 8px rgba(0,0,0,0.28), -1px -1px 4px rgba(255,255,255,0.12),
+                     inset 1px 1px 2px rgba(255,255,255,0.18), inset -1px -1px 2px rgba(0,0,0,0.18)`
+                  : 'none',
               }}
             >
               {submitting ? 'Evaluating…' : 'Submit Answer ✦'}
@@ -236,34 +220,34 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
         {step === 'interim' && interimData && (
           <>
             <div className="mt-2 mb-4 flex items-center gap-3">
-              <div
-                className="text-2xl font-bold font-mono"
-                style={{ color: interimScoreColor, textShadow: `0 0 12px ${interimScoreColor}66` }}
-              >
+              <div className="text-2xl font-bold font-mono" style={{ color: interimColor }}>
                 {interimData.ai_score}
               </div>
               <div>
-                <p className="text-xs text-white/35">Score · Question {questionIndex}</p>
-                <p className="text-xs text-white/50">
+                <p className="nt-section-label">Score · Question {questionIndex}</p>
+                <p className="text-xs" style={{ color: 'var(--nt-text-2)' }}>
                   {questionIndex} of {TOTAL_QUESTIONS} answered
                 </p>
               </div>
             </div>
 
-            <div className="glass-1 rounded-2xl p-4 mb-5">
-              <p className="text-sm text-white/75 leading-relaxed">{interimData.feedback}</p>
+            <div className="nt-card p-4 mb-5">
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--nt-text-2)' }}>
+                {interimData.feedback}
+              </p>
             </div>
 
-            <p className="text-xs text-white/25 text-center mb-5">
+            <p className="text-xs text-center mb-5" style={{ color: 'var(--nt-text-3)' }}>
               Master Light mastery updates after all {TOTAL_QUESTIONS} questions — keep going!
             </p>
 
             <button
               onClick={handleNextQuestion}
-              className="w-full btn-liquid py-3 text-sm font-medium"
+              className="w-full py-3 text-sm font-medium rounded-[50px] transition-all"
               style={{
-                borderColor: 'rgba(255,210,40,0.45)',
-                boxShadow:   '0 0 14px rgba(255,210,40,0.12)',
+                background: 'rgba(212,160,23,0.12)',
+                border: `1px solid rgba(212,160,23,0.35)`,
+                color: GOLD,
               }}
             >
               Next Question →
@@ -274,49 +258,51 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
         {/* ── Final Result ─────────────────────────────────────────────────── */}
         {step === 'result' && finalResult && (
           <>
-            <p className="text-xs text-white/40 tracking-widest uppercase mb-3 mt-1">
-              Master Light Assessment Complete
-            </p>
+            <p className="nt-section-label mb-3 mt-1">Master Light Assessment Complete</p>
 
             <div className="mb-4 flex items-center gap-3">
-              <div
-                className="text-2xl font-bold font-mono"
-                style={{ color: masteryColor, textShadow: `0 0 12px ${masteryColor}66` }}
-              >
+              <div className="text-2xl font-bold font-mono" style={{ color: masteryColor }}>
                 {finalResult.ai_score}
               </div>
               <div>
-                <p className="text-xs text-white/35">Final Score</p>
+                <p className="nt-section-label">Final Score</p>
                 <p className="text-sm font-medium" style={{ color: masteryColor }}>
                   {mlMastery >= 70 ? '✦ Mastered' : 'Keep Practicing'}
                 </p>
               </div>
             </div>
 
-            <div className="glass-1 rounded-2xl p-4 mb-5">
-              <p className="text-sm text-white/75 leading-relaxed">{finalResult.feedback}</p>
+            <div className="nt-card p-4 mb-5">
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--nt-text-2)' }}>
+                {finalResult.feedback}
+              </p>
             </div>
 
             {/* Master Light mastery bar */}
             <div className="mb-5">
-              <div className="flex justify-between text-xs text-white/40 mb-1.5">
+              <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--nt-text-3)' }}>
                 <span>Master Light Mastery</span>
                 <span style={{ color: masteryColor }}>{mlMastery.toFixed(1)}%</span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+              <div className="nt-track h-2 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${mlMastery}%`,
-                    background: `linear-gradient(90deg, #FFD700, rgba(255,180,30,0.6))`,
-                    boxShadow: `0 0 8px rgba(255,210,40,0.5)`,
+                    background: `linear-gradient(90deg, ${GOLD}, ${GOLD_LT})`,
                   }}
                 />
               </div>
             </div>
 
-            <button onClick={onClose} className="w-full btn-liquid py-2.5 text-sm"
-              style={{ borderColor: 'rgba(255,210,40,0.35)' }}
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 text-sm rounded-[50px] transition-all"
+              style={{
+                background: 'rgba(212,160,23,0.10)',
+                border: `1px solid rgba(212,160,23,0.30)`,
+                color: GOLD,
+              }}
             >
               Continue Learning ✦
             </button>
@@ -328,10 +314,9 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
           <div className="py-8 text-center">
             <div className="relative w-16 h-16 mx-auto mb-5">
               <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
+                <circle cx="32" cy="32" r="26" fill="none" stroke="var(--nt-border-2)" strokeWidth="4" />
                 <circle cx="32" cy="32" r="26" fill="none"
-                  stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
-                <circle cx="32" cy="32" r="26" fill="none"
-                  stroke="rgba(255,210,40,0.5)" strokeWidth="4" strokeLinecap="round"
+                  stroke={GOLD_ALPHA} strokeWidth="4" strokeLinecap="round"
                   strokeDasharray={`${2 * Math.PI * 26}`}
                   strokeDashoffset={`${2 * Math.PI * 26 * (cooldown / 30)}`}
                   style={{ transition: 'stroke-dashoffset 1s linear' }}
@@ -339,32 +324,34 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
               </svg>
               <span
                 className="absolute inset-0 flex items-center justify-center text-sm font-mono font-semibold"
-                style={{ color: cooldown > 0 ? 'rgba(255,210,40,0.8)' : 'rgba(255,215,0,0.9)' }}
+                style={{ color: cooldown > 0 ? GOLD : GOLD_LT }}
               >
                 {cooldown > 0 ? `${cooldown}s` : '✓'}
               </span>
             </div>
-            <p className="text-sm font-medium mb-2" style={{ color: 'rgba(255,210,40,0.8)' }}>
+            <p className="text-sm font-medium mb-2" style={{ color: 'var(--nt-text)' }}>
               Sirkuit AI sedang cooldown
             </p>
-            <p className="text-xs text-white/35 mb-6 leading-relaxed max-w-xs mx-auto">
+            <p className="text-xs mb-6 leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--nt-text-3)' }}>
               Terlalu banyak permintaan. Harap tunggu sebelum mencoba lagi.
             </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={handleRetryAfterCooldown}
                 disabled={cooldown > 0}
-                className="btn-liquid px-6 py-2.5 text-sm font-medium disabled:opacity-35 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 text-sm font-medium rounded-[50px] disabled:opacity-35 disabled:cursor-not-allowed transition-all"
                 style={{
-                  borderColor: cooldown === 0 ? 'rgba(255,210,40,0.5)' : undefined,
-                  boxShadow:   cooldown === 0 ? '0 0 14px rgba(255,210,40,0.2)' : undefined,
+                  background: cooldown === 0 ? 'rgba(212,160,23,0.12)' : 'transparent',
+                  border: `1px solid ${cooldown === 0 ? `rgba(212,160,23,0.40)` : 'var(--nt-border)'}`,
+                  color: cooldown === 0 ? GOLD : 'var(--nt-text-3)',
                 }}
               >
                 {cooldown > 0 ? `Tunggu ${cooldown}s…` : 'Coba Lagi ✦'}
               </button>
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 text-sm text-white/35 hover:text-white/60 transition-colors"
+                className="px-5 py-2.5 text-sm transition-colors"
+                style={{ color: 'var(--nt-text-3)' }}
               >
                 Tutup
               </button>
@@ -375,9 +362,9 @@ export default function MasterLightModal({ node, onClose, onMasteryUpdate }) {
         {/* ── Generic Error ─────────────────────────────────────────────────── */}
         {step === 'error' && (
           <div className="py-8 text-center">
-            <p className="text-white/50 text-sm mb-2">Sirkuit AI terputus</p>
-            <p className="text-white/25 text-xs mb-6">{errMsg}</p>
-            <button onClick={onClose} className="btn-liquid px-6 py-2 text-sm">Close</button>
+            <p className="text-sm mb-2" style={{ color: 'var(--nt-text-2)' }}>Terjadi kesalahan</p>
+            <p className="text-xs mb-6" style={{ color: 'var(--nt-text-3)' }}>{errMsg}</p>
+            <button onClick={onClose} className="nt-btn-secondary px-6 py-2 text-sm">Close</button>
           </div>
         )}
       </div>

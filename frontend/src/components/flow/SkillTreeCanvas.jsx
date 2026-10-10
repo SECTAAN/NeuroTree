@@ -422,16 +422,16 @@ function Canvas({ graphData }) {
 
   const isLight = theme === 'light'
 
-  // ── Grid colours tuned to app palette ─────────────────────────────────────
-  // Dark : surface #111315, grid lines slightly lighter
-  // Light: surface #f0f2f5, grid lines slightly darker
-  const gridLineColor  = isLight ? '#d4d8df' : '#1e2530'
-  const surfaceColor   = isLight ? '#f0f2f5' : '#111315'
+  // ── Grid colours tuned to organic palette ────────────────────────────────
+  // Light: warm parchment bg (#faf2e3), subtle warm grid lines
+  // Dark : deep teal bg (#092328), dark grid lines
+  const gridLineColor  = isLight ? '#e0d5c0' : '#0e3035'
+  const surfaceColor   = isLight ? '#faf2e3' : '#092328'
   // Radial mask fades the grid from transparent at the centre outward to the
-  // surface colour at the edges — creates the "vignette blueprint" look.
+  // surface colour at the edges — creates a soft vignette look.
   const radialMaskBg   = isLight
-    ? 'radial-gradient(ellipse at center, transparent 15%, #f0f2f5 75%)'
-    : 'radial-gradient(ellipse at center, transparent 15%, #111315 75%)'
+    ? 'radial-gradient(ellipse at center, transparent 15%, #faf2e3 75%)'
+    : 'radial-gradient(ellipse at center, transparent 15%, #092328 75%)'
 
   return (
     // ── Layer 1: surface base colour ──────────────────────────────────────
@@ -482,13 +482,13 @@ function Canvas({ graphData }) {
       >
         <MiniMap
           nodeColor={(n) => n.data?.status === 'locked'
-            ? (isLight ? '#c8cdd4' : '#2a2d31')
-            : 'rgba(0,180,210,0.6)'}
-          maskColor={isLight ? 'rgba(220,225,230,0.80)' : 'rgba(17,19,21,0.75)'}
+            ? (isLight ? '#c5b89a' : '#1a3a3a')
+            : (isLight ? '#354e47' : '#2A835F')}
+          maskColor={isLight ? 'rgba(250,242,227,0.80)' : 'rgba(9,35,40,0.75)'}
           style={{
             bottom: 20, right: 80, top: 'auto',
-            background: isLight ? 'rgba(240,242,245,0.92)' : 'rgba(17,19,21,0.92)',
-            border: `1px solid ${isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'}`,
+            background: isLight ? 'rgba(250,242,227,0.92)' : 'rgba(9,35,40,0.92)',
+            border: `1px solid ${isLight ? 'rgba(53,78,71,0.18)' : 'rgba(18,84,79,0.35)'}`,
           }}
         />
       </ReactFlow>

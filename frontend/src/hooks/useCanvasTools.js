@@ -28,7 +28,8 @@ function getInitialTheme() {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'light' || saved === 'dark') return saved
   } catch { /* ignore */ }
-  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  // M-19: light is the new default
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function applyThemeClass(theme) {
@@ -37,6 +38,7 @@ function applyThemeClass(theme) {
     html.classList.add('dark')
     html.classList.remove('theme-light')
   } else {
+    // Light mode: remove dark, add theme-light (legacy CSS still checks this)
     html.classList.remove('dark')
     html.classList.add('theme-light')
   }

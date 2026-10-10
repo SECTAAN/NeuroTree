@@ -68,7 +68,7 @@ export default function MasterLightNode({ data, selected }) {
     width: 8, height: 8,
     borderRadius: '50%',
     border: `2px solid ${!isUnlocked ? 'rgba(255,255,255,0.08)' : 'rgba(255,210,60,0.5)'}`,
-    background: 'var(--bg-primary, #111315)',
+    background: 'var(--nt-bg)',
   }
 
   // Crown ray positions (8 rays around the bulb top)

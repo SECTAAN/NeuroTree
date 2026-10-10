@@ -165,33 +165,32 @@ export default function CareerMap() {
               transition-colors hover:opacity-80"
             aria-label="Open menu"
           >
-            <span className="block w-3.5 h-px rounded-full bg-slate-500 dark:bg-slate-400" />
-            <span className="block w-3.5 h-px rounded-full bg-slate-500 dark:bg-slate-400" />
-            <span className="block w-3.5 h-px rounded-full bg-slate-500 dark:bg-slate-400" />
+            <span className="block w-3.5 h-px rounded-full" style={{ background: 'var(--nt-text-3)' }} />
+            <span className="block w-3.5 h-px rounded-full" style={{ background: 'var(--nt-text-3)' }} />
+            <span className="block w-3.5 h-px rounded-full" style={{ background: 'var(--nt-text-3)' }} />
           </button>
 
           <button
             onClick={() => navigateTo('dashboard')}
-            className="text-xs text-slate-500 dark:text-slate-400
-              hover:text-slate-800 dark:hover:text-slate-200
-              transition-colors flex items-center gap-1"
+            className="text-xs transition-colors flex items-center gap-1"
+            style={{ color: 'var(--nt-text-3)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-text)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
           >
             ← Dashboard
           </button>
         </div>
 
-        <span
-          className="text-xs font-semibold tracking-widest uppercase"
-          style={{ color: 'rgba(0,243,255,0.7)' }}
-        >
+        <span className="nt-section-label" style={{ color: 'var(--nt-primary-lt)' }}>
           Career Map
         </span>
 
         <button
           onClick={() => navigateTo('skilltree')}
-          className="text-xs text-slate-500 dark:text-slate-400
-            hover:text-slate-800 dark:hover:text-slate-200
-            transition-colors flex items-center gap-1"
+          className="text-xs transition-colors flex items-center gap-1"
+          style={{ color: 'var(--nt-text-3)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-text)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
         >
           Skill Tree →
         </button>
@@ -210,33 +209,27 @@ export default function CareerMap() {
               <span
                 className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] flex-shrink-0"
                 style={{
-                  background: 'rgba(0,243,255,0.10)',
-                  border: '1px solid rgba(0,243,255,0.25)',
-                  color: 'rgba(0,243,255,0.85)',
+                  background: 'rgba(53,78,71,0.10)',
+                  border: '1px solid rgba(53,78,71,0.25)',
+                  color: 'var(--nt-primary-lt)',
+                  boxShadow: 'var(--nt-shadow-out-sm)',
                 }}
               >
                 ⚡
               </span>
-              <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400 dark:text-slate-500">
-                NeuroTree Recommendation
-              </p>
+              <p className="nt-section-label">NeuroTree Recommendation</p>
             </div>
 
             {/* A — no session */}
             {autoStatus === 'no-session' && (
-              <div
-                className="clay-card rounded-2xl px-5 py-8 text-center"
-                style={{ borderColor: 'rgba(255,255,255,0.08)' }}
-              >
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">No active tree</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
+              <div className="clay-card rounded-2xl px-5 py-8 text-center">
+                <p className="text-sm mb-1" style={{ color: 'var(--nt-text-2)' }}>No active tree</p>
+                <p className="text-xs mb-4" style={{ color: 'var(--nt-text-3)' }}>
                   Open or create a tree first, then come back for a personalised recommendation.
                 </p>
                 <button
                   onClick={() => navigateTo('dashboard')}
-                  className="clay-card px-5 py-2 rounded-xl text-xs
-                    text-cyan-600 dark:text-cyan-400
-                    hover:-translate-y-0.5 transition-transform duration-200"
+                  className="nt-btn-secondary px-5 py-2 text-xs hover:-translate-y-0.5 transition-transform duration-200"
                 >
                   Go to Dashboard →
                 </button>
@@ -245,18 +238,12 @@ export default function CareerMap() {
 
             {/* A — loading */}
             {autoStatus === 'loading' && (
-              <div
-                className="clay-card rounded-2xl px-6 py-8 text-center"
-                style={{ borderColor: 'rgba(0,243,255,0.12)' }}
-              >
-                <div className="text-xl mb-3 animate-pulse">🗺️</div>
-                <p className="text-sm font-mono tracking-widest text-slate-500 dark:text-slate-400">
-                  ANALYSING YOUR TREE…
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              <div className="clay-card rounded-2xl px-6 py-8 text-center">
+                <div className="nt-spinner mx-auto mb-4" />
+                <p className="text-sm" style={{ color: 'var(--nt-text-2)' }}>
                   {autoGoal
-                    ? <>NT-05 is running for &ldquo;{autoGoal}&rdquo;</>
-                    : 'Identifying career matches from your skill tree…'}
+                    ? <>Analysing for &ldquo;{autoGoal}&rdquo;…</>
+                    : 'Identifying career matches…'}
                 </p>
               </div>
             )}
@@ -265,16 +252,11 @@ export default function CareerMap() {
             {autoStatus === 'error' && (
               <div
                 className="clay-card rounded-2xl px-5 py-6 text-center"
-                style={{ borderColor: 'rgba(255,80,80,0.20)' }}
+                style={{ borderLeft: '3px solid var(--nt-coral)' }}
               >
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Recommendation failed</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">{autoError}</p>
-                <button
-                  onClick={handleAutoRetry}
-                  className="clay-card px-5 py-2 rounded-xl text-xs
-                    text-cyan-600 dark:text-cyan-400
-                    hover:-translate-y-0.5 transition-transform duration-200"
-                >
+                <p className="text-sm mb-1" style={{ color: 'var(--nt-text-2)' }}>Recommendation failed</p>
+                <p className="text-xs mb-4" style={{ color: 'var(--nt-text-3)' }}>{autoError}</p>
+                <button onClick={handleAutoRetry} className="nt-btn-secondary px-5 py-2 text-xs">
                   Retry ↺
                 </button>
               </div>
@@ -282,19 +264,14 @@ export default function CareerMap() {
 
             {/* A — result (empty-tree sentinel) */}
             {autoStatus === 'result' && autoResult?._empty && (
-              <div
-                className="clay-card rounded-2xl px-5 py-8 text-center"
-                style={{ borderColor: 'rgba(255,255,255,0.08)' }}
-              >
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">No knowledge nodes yet</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
+              <div className="clay-card rounded-2xl px-5 py-8 text-center">
+                <p className="text-sm mb-1" style={{ color: 'var(--nt-text-2)' }}>No knowledge nodes yet</p>
+                <p className="text-xs mb-4" style={{ color: 'var(--nt-text-3)' }}>
                   Complete at least one quiz to see a personalised career recommendation.
                 </p>
                 <button
                   onClick={() => navigateTo('skilltree')}
-                  className="clay-card px-5 py-2 rounded-xl text-xs
-                    text-cyan-600 dark:text-cyan-400
-                    hover:-translate-y-0.5 transition-transform duration-200"
+                  className="nt-btn-secondary px-5 py-2 text-xs hover:-translate-y-0.5 transition-transform duration-200"
                 >
                   Go to Skill Tree →
                 </button>
@@ -307,8 +284,8 @@ export default function CareerMap() {
                 {/* "Also relevant" careers — shown when /suggest returned multiple options */}
                 {suggestedCareers.length > 1 && (
                   <div className="flex items-center gap-2 flex-wrap mb-3">
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">
-                      {suggestSource === 'fallback' ? 'Generic suggestion — also try:' : 'Also relevant:'}
+                    <span className="nt-section-label flex-shrink-0">
+                      {suggestSource === 'fallback' ? 'Generic — also try:' : 'Also relevant:'}
                     </span>
                     {suggestedCareers.slice(1, 4).map((c) => (
                       <button
@@ -321,12 +298,7 @@ export default function CareerMap() {
                             .then(({ data }) => { setAutoResult(data); setAutoStatus('result') })
                             .catch((err) => { setAutoError(err.message || 'NT-05 gagal.'); setAutoStatus('error') })
                         }}
-                        className="text-[10px] px-2 py-0.5 rounded-full transition-colors"
-                        style={{
-                          background: 'rgba(0,243,255,0.07)',
-                          border: '1px solid rgba(0,243,255,0.18)',
-                          color: 'rgba(0,243,255,0.70)',
-                        }}
+                        className="nt-chip"
                       >
                         {c}
                       </button>
@@ -347,24 +319,20 @@ export default function CareerMap() {
               <span
                 className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] flex-shrink-0"
                 style={{
-                  background: 'rgba(191,0,255,0.08)',
-                  border: '1px solid rgba(191,0,255,0.22)',
-                  color: 'rgba(191,0,255,0.85)',
+                  background: 'rgba(219,98,113,0.10)',
+                  border: '1px solid rgba(219,98,113,0.28)',
+                  color: 'var(--nt-coral)',
+                  boxShadow: 'var(--nt-shadow-out-sm)',
                 }}
               >
                 ◈
               </span>
-              <p className="text-[10px] font-semibold tracking-widest uppercase text-slate-400 dark:text-slate-500">
-                Custom Dream Job
-              </p>
+              <p className="nt-section-label">Custom Dream Job</p>
             </div>
 
-            {/* Custom input form — always visible */}
-            <div
-              className="clay-card rounded-2xl p-5 flex flex-col gap-4"
-              style={{ borderColor: 'rgba(191,0,255,0.15)' }}
-            >
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+            {/* Custom input form */}
+            <div className="clay-card rounded-2xl p-5 flex flex-col gap-4">
+              <p className="text-xs" style={{ color: 'var(--nt-text-3)' }}>
                 Want a pathway toward a specific role? Enter it below — this runs a separate analysis
                 and appears beneath the NeuroTree recommendation.
               </p>
@@ -377,23 +345,14 @@ export default function CareerMap() {
                   placeholder="e.g. Network Engineer, AI Engineer, Data Scientist…"
                   maxLength={200}
                   disabled={customStatus === 'loading'}
-                  className="flex-1 rounded-xl px-3 py-2 text-sm min-w-0
-                    bg-white/60 dark:bg-black/20
-                    border border-slate-200 dark:border-white/10
-                    text-slate-800 dark:text-slate-100
-                    placeholder-slate-400 dark:placeholder-slate-600
-                    focus:outline-none focus:ring-2 focus:ring-purple-400/30
-                    disabled:opacity-50 transition-colors"
+                  className="nt-input flex-1 rounded-xl px-3 py-2 text-sm min-w-0 disabled:opacity-50"
+                  style={{ caretColor: 'var(--nt-coral)' }}
                 />
                 <button
                   type="submit"
                   disabled={!customGoal.trim() || customStatus === 'loading'}
-                  className="clay-card flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium
-                    text-purple-600 dark:text-purple-400
-                    disabled:opacity-40 disabled:cursor-not-allowed
-                    hover:-translate-y-0.5 active:translate-y-0
-                    transition-all duration-200 whitespace-nowrap"
-                  style={{ borderColor: 'rgba(191,0,255,0.25)' }}
+                  className="nt-btn-coral flex-shrink-0 rounded-xl px-4 py-2 text-sm font-medium
+                    disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {customStatus === 'loading' ? '…' : 'Analyse ⚡'}
                 </button>
@@ -402,24 +361,24 @@ export default function CareerMap() {
 
             {/* B — loading */}
             {customStatus === 'loading' && (
-              <div className="mt-4 clay-card rounded-2xl px-6 py-6 text-center"
-                style={{ borderColor: 'rgba(191,0,255,0.12)' }}>
-                <div className="text-lg mb-2 animate-pulse">🔭</div>
-                <p className="text-xs font-mono tracking-widest text-slate-400 dark:text-slate-500">
-                  ANALYSING CUSTOM GOAL…
-                </p>
+              <div className="mt-4 clay-card rounded-2xl px-6 py-6 text-center">
+                <div className="nt-spinner mx-auto mb-3" />
+                <p className="text-xs" style={{ color: 'var(--nt-text-3)' }}>Analysing custom goal…</p>
               </div>
             )}
 
             {/* B — error */}
             {customStatus === 'error' && (
               <div className="mt-4 clay-card rounded-2xl px-5 py-5 text-center"
-                style={{ borderColor: 'rgba(255,80,80,0.18)' }}>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Custom analysis failed</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">{customError}</p>
+                style={{ borderLeft: '3px solid var(--nt-coral)' }}>
+                <p className="text-sm mb-1" style={{ color: 'var(--nt-text-2)' }}>Custom analysis failed</p>
+                <p className="text-xs mb-3" style={{ color: 'var(--nt-text-3)' }}>{customError}</p>
                 <button
                   onClick={handleCustomReset}
-                  className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                  className="text-xs transition-colors"
+                  style={{ color: 'var(--nt-text-3)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-coral)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
                 >
                   Clear ✕
                 </button>
@@ -430,17 +389,18 @@ export default function CareerMap() {
             {customStatus === 'result' && customResult && (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    Custom result — {customResult.career_goal}
-                  </p>
+                  <p className="nt-section-label">Custom — {customResult.career_goal}</p>
                   <button
                     onClick={handleCustomReset}
-                    className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    className="text-[10px] transition-colors"
+                    style={{ color: 'var(--nt-text-3)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-coral)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
                   >
                     Clear ✕
                   </button>
                 </div>
-                <PathwayResult result={customResult} accentOverride="purple" />
+                <PathwayResult result={customResult} accentOverride="coral" />
               </div>
             )}
           </section>
@@ -454,20 +414,9 @@ export default function CareerMap() {
 }
 
 // ── PathwayResult ─────────────────────────────────────────────────────────────
-// Renders one full NT-05 result — used by both Panel A and Panel B.
-// accentOverride lets Panel B use purple tones for visual distinction.
 function PathwayResult({ result, accentOverride }) {
-  const isPurple = accentOverride === 'purple'
+  const isCoral = accentOverride === 'coral' || accentOverride === 'purple'
 
-  const pathAccent = isPurple
-    ? { bg: 'rgba(191,0,255,0.12)', border: 'rgba(191,0,255,0.25)', text: 'rgba(191,0,255,0.85)' }
-    : { bg: 'rgba(0,243,255,0.12)', border: 'rgba(0,243,255,0.25)', text: 'rgba(0,243,255,0.85)' }
-
-  // tree_career_match:
-  //   -1.0 = career not in reference database (unknown)
-  //    0.0 = known career, tree has zero relevant nodes (domain mismatch)
-  //    0–1 = partial-to-full match
-  //    1.0 = default for LIVE / full match
   const treeMatch   = result.tree_career_match ?? 1.0
   const hasNodes    = (result.profile_summary?.total ?? 0) > 0
   const isUnknown   = treeMatch === -1 && hasNodes
@@ -476,13 +425,11 @@ function PathwayResult({ result, accentOverride }) {
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Header row: goal + estimated days */}
+      {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-xs tracking-widest uppercase text-slate-400 dark:text-slate-500">
-            Career Goal
-          </p>
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
+          <p className="nt-section-label">Career Goal</p>
+          <h2 className="text-base font-semibold leading-snug mt-0.5" style={{ color: 'var(--nt-text)' }}>
             {result.career_goal}
           </h2>
         </div>
@@ -490,9 +437,9 @@ function PathwayResult({ result, accentOverride }) {
           <span
             className="text-xs px-3 py-1 rounded-full flex-shrink-0"
             style={{
-              background: pathAccent.bg,
-              border: `1px solid ${pathAccent.border}`,
-              color: pathAccent.text,
+              background: isCoral ? 'rgba(219,98,113,0.10)' : 'rgba(53,78,71,0.10)',
+              border: isCoral ? '1px solid rgba(219,98,113,0.28)' : '1px solid rgba(53,78,71,0.25)',
+              color: isCoral ? 'var(--nt-coral)' : 'var(--nt-primary-lt)',
             }}
           >
             ~{result.estimated_completion_days}d
@@ -500,32 +447,18 @@ function PathwayResult({ result, accentOverride }) {
         )}
       </div>
 
-      {/* Tree–career mismatch notice (known career, wrong domain) */}
+      {/* Mismatch notice */}
       {isMismatch && (
-        <div
-          className="rounded-xl px-4 py-3 text-xs leading-relaxed"
-          style={{
-            background: 'rgba(251,191,36,0.10)',
-            border: '1px solid rgba(251,191,36,0.30)',
-            color: 'rgba(180,130,0,0.90)',
-          }}
-        >
+        <div className="nt-notice-amber px-4 py-3 text-xs leading-relaxed">
           ⚠️ Your active learning tree covers a different domain. The list below shows what{' '}
           <strong>{result.career_goal}</strong> typically requires — upload relevant material
           to get a personalised analysis.
         </div>
       )}
 
-      {/* Unknown career notice (career not in reference database) */}
+      {/* Unknown career notice */}
       {isUnknown && (
-        <div
-          className="rounded-xl px-4 py-3 text-xs leading-relaxed"
-          style={{
-            background: 'rgba(148,163,184,0.10)',
-            border: '1px solid rgba(148,163,184,0.30)',
-            color: 'rgba(71,85,105,0.90)',
-          }}
-        >
+        <div className="nt-notice-gray px-4 py-3 text-xs leading-relaxed">
           ℹ️ <strong>{result.career_goal}</strong> is not in our career reference database.
           The path below shows your unmastered tree topics — upload relevant material and
           switch to Live mode for a full personalised analysis.
@@ -535,98 +468,96 @@ function PathwayResult({ result, accentOverride }) {
       {/* Profile summary pills */}
       {result.profile_summary && result.profile_summary.total > 0 && (
         <div className="flex gap-2 flex-wrap text-xs">
-          <Pill color="green"  label={`${result.profile_summary.mastered} mastered`} />
-          <Pill color="yellow" label={`${result.profile_summary.weak} weak`} />
-          <Pill color="red"    label={`${result.profile_summary.missing} missing`} />
-          <Pill color="gray"   label={`${result.profile_summary.total} total`} />
+          <Pill color="primary" label={`${result.profile_summary.mastered} mastered`} />
+          <Pill color="coral"   label={`${result.profile_summary.weak} weak`} />
+          <Pill color="gray"    label={`${result.profile_summary.missing} missing`} />
+          <Pill color="muted"   label={`${result.profile_summary.total} total`} />
         </div>
       )}
 
-      {/* Empty profile note — session has nodes but all unstarted */}
       {result.profile_summary?.total === 0 && (
-        <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-          No knowledge nodes found in this session. Start learning to see a personalised gap analysis.
+        <p className="text-xs italic" style={{ color: 'var(--nt-text-3)' }}>
+          No knowledge nodes found. Start learning to see a personalised gap analysis.
         </p>
       )}
 
       {/* Strong concepts */}
       {result.strong_concepts?.length > 0 && (
-        <Section title="✅ Strong Concepts" accent="green">
-          <TagList tags={result.strong_concepts} color="green" />
-        </Section>
+        <CareerSection title="✅ Strong Concepts" accent="primary">
+          <TagList tags={result.strong_concepts} color="primary" />
+        </CareerSection>
       )}
 
-      {/* Weak concepts — only shown when tree is relevant to career (not mismatch/unknown) */}
+      {/* Weak concepts */}
       {!isMismatch && !isUnknown && result.weak_concepts?.length > 0 && (
-        <Section title="⚠️ Weak Concepts" accent="yellow">
-          <TagList tags={result.weak_concepts} color="yellow" />
-        </Section>
+        <CareerSection title="⚠️ Weak Concepts" accent="coral">
+          <TagList tags={result.weak_concepts} color="coral" />
+        </CareerSection>
       )}
 
-      {/* Knowledge gaps — labelled differently on mismatch; hidden on unknown career */}
+      {/* Knowledge gaps */}
       {!isUnknown && result.knowledge_gaps?.length > 0 && (
-        <Section
+        <CareerSection
           title={isMismatch ? `📋 Required Skills for ${result.career_goal}` : '🔴 Knowledge Gaps'}
-          accent="red"
+          accent="coral"
         >
-          <TagList tags={result.knowledge_gaps} color="red" />
-        </Section>
+          <TagList tags={result.knowledge_gaps} color="coral" />
+        </CareerSection>
       )}
 
       {/* Recommended path */}
       {result.recommended_path?.length > 0 && (
-        <Section title="📍 Recommended Learning Path" accent={isPurple ? 'purple' : 'cyan'}>
+        <CareerSection title="📍 Recommended Learning Path" accent={isCoral ? 'coral' : 'primary'}>
           <ol className="flex flex-col gap-2.5 mt-1">
             {result.recommended_path.map((s) => (
               <li key={s.step} className="flex gap-3 items-start">
                 <span
                   className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                  style={pathAccent}
+                  style={{
+                    background: isCoral ? 'rgba(219,98,113,0.12)' : 'rgba(53,78,71,0.10)',
+                    border: isCoral ? '1px solid rgba(219,98,113,0.30)' : '1px solid rgba(53,78,71,0.22)',
+                    color: isCoral ? 'var(--nt-coral)' : 'var(--nt-primary-lt)',
+                  }}
                 >
                   {s.step}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug">
+                  <p className="text-sm font-medium leading-snug" style={{ color: 'var(--nt-text)' }}>
                     {s.chunk_title}
                   </p>
                   {s.reason && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{s.reason}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--nt-text-3)' }}>{s.reason}</p>
                   )}
                 </div>
               </li>
             ))}
           </ol>
-        </Section>
+        </CareerSection>
       )}
 
       {/* Reasoning */}
       {result.reasoning && (
-        <Section title="💡 AI Reasoning" accent="blue">
-          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+        <CareerSection title="💡 AI Reasoning" accent="muted">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--nt-text-2)' }}>
             {result.reasoning}
           </p>
-        </Section>
+        </CareerSection>
       )}
     </div>
   )
 }
 
-// ── Section ───────────────────────────────────────────────────────────────────
-function Section({ title, accent, children }) {
+// ── CareerSection ─────────────────────────────────────────────────────────────
+function CareerSection({ title, accent, children }) {
   const borderColor = {
-    green:  'rgba(0,210,122,0.25)',
-    yellow: 'rgba(255,190,50,0.25)',
-    red:    'rgba(255,80,80,0.20)',
-    cyan:   'rgba(0,243,255,0.25)',
-    blue:   'rgba(77,124,254,0.25)',
-    purple: 'rgba(191,0,255,0.22)',
-  }[accent] ?? 'rgba(255,255,255,0.10)'
+    primary: 'rgba(53,78,71,0.22)',
+    coral:   'rgba(219,98,113,0.22)',
+    muted:   'var(--nt-border)',
+  }[accent] ?? 'var(--nt-border)'
 
   return (
-    <div className="clay-card rounded-2xl p-4" style={{ borderColor }}>
-      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-widest">
-        {title}
-      </p>
+    <div className="clay-card rounded-2xl p-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+      <p className="nt-section-label mb-3">{title}</p>
       {children}
     </div>
   )
@@ -634,22 +565,15 @@ function Section({ title, accent, children }) {
 
 // ── TagList ───────────────────────────────────────────────────────────────────
 function TagList({ tags, color }) {
-  const palette = {
-    green:  { bg: 'rgba(0,210,122,0.10)', border: 'rgba(0,210,122,0.25)', text: 'rgba(0,210,122,0.90)' },
-    yellow: { bg: 'rgba(255,190,50,0.10)', border: 'rgba(255,190,50,0.25)', text: 'rgba(220,160,30,0.95)' },
-    red:    { bg: 'rgba(255,80,80,0.08)',  border: 'rgba(255,80,80,0.22)',  text: 'rgba(240,80,80,0.90)' },
-  }[color] ?? { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', text: 'rgba(255,255,255,0.65)' }
+  const style = {
+    primary: { background: 'rgba(53,78,71,0.08)',   border: '1px solid rgba(53,78,71,0.22)',   color: 'var(--nt-primary-lt)' },
+    coral:   { background: 'rgba(219,98,113,0.08)', border: '1px solid rgba(219,98,113,0.22)', color: 'var(--nt-coral)'      },
+  }[color] ?? { background: 'var(--nt-bg-2)', border: '1px solid var(--nt-border)', color: 'var(--nt-text-3)' }
 
   return (
     <div className="flex flex-wrap gap-1.5">
       {tags.map((tag, i) => (
-        <span
-          key={i}
-          className="text-xs px-2.5 py-1 rounded-full"
-          style={{ background: palette.bg, border: `1px solid ${palette.border}`, color: palette.text }}
-        >
-          {tag}
-        </span>
+        <span key={i} className="text-xs px-2.5 py-1 rounded-full" style={style}>{tag}</span>
       ))}
     </div>
   )
@@ -657,19 +581,14 @@ function TagList({ tags, color }) {
 
 // ── Pill ──────────────────────────────────────────────────────────────────────
 function Pill({ color, label }) {
-  const palette = {
-    green:  { bg: 'rgba(0,210,122,0.10)', text: 'rgba(0,210,122,0.85)' },
-    yellow: { bg: 'rgba(255,190,50,0.10)', text: 'rgba(220,160,30,0.90)' },
-    red:    { bg: 'rgba(255,80,80,0.08)',  text: 'rgba(240,80,80,0.85)' },
-    gray:   { bg: 'rgba(255,255,255,0.06)', text: 'rgba(255,255,255,0.45)' },
-  }[color] ?? { bg: 'rgba(255,255,255,0.06)', text: 'rgba(255,255,255,0.45)' }
+  const style = {
+    primary: { background: 'rgba(53,78,71,0.10)',   color: 'var(--nt-primary-lt)' },
+    coral:   { background: 'rgba(219,98,113,0.08)', color: 'var(--nt-coral)'      },
+    gray:    { background: 'rgba(219,98,113,0.08)', color: 'var(--nt-coral)'      },
+    muted:   { background: 'var(--nt-bg-2)',        color: 'var(--nt-text-3)'     },
+  }[color] ?? { background: 'var(--nt-bg-2)', color: 'var(--nt-text-3)' }
 
   return (
-    <span
-      className="px-2.5 py-1 rounded-full font-medium"
-      style={{ background: palette.bg, color: palette.text }}
-    >
-      {label}
-    </span>
+    <span className="px-2.5 py-1 rounded-full font-medium text-xs" style={style}>{label}</span>
   )
 }

@@ -5,144 +5,105 @@ import { flashcardStorageKey } from '../../hooks/useFlashcardProgress'
 
 /**
  * RouterModal — P1 Material Hub modal (spec 10.67).
- *
- * Opened when the user clicks a RouterMarker (▣) on an EnergyEdge.
- * Receives a router context object and fetches REAL node content via
- * graphApi.fetchNode() for both the source and target nodes.
- *
- * Real data contract (GET /api/v1/node/{id}):
- *   { id, title, content, key_concepts, mastery_score, mastery_level }
- *
- * Locked nodes return HTTP 403 — we surface them gracefully.
- *
- * Two tabs:
- *   CONNECTION  — source/target header, relationship explanation, key
- *                 concepts from both nodes, both node content summaries
- *   FLASHCARDS  — FlashcardPanel with cards built from real key_concepts
- *
- * Props:
- *   router    — { sourceNodeId, targetNodeId, sourceLabel, targetLabel, ... }
- *   onClose   — () => void
+ * M-19: full palette, skeuomorphic surface. All neon removed.
  */
 
 // ── Flashcard builder ─────────────────────────────────────────────────────────
-// Generates active-recall cards from real key_concepts arrays.
-// Fallback: when key_concepts is empty (live NT-01 path), generate one card from
-// node content so the Flashcard tab is always usable.
-// Capped at 6 total cards so the panel stays usable.
 function buildFlashcards(sourceNode, targetNode) {
   const cards = []
-  let seq = 0
-
   function addConcepts(node, concepts) {
-    const list = Array.isArray(concepts) ? concepts.filter(Boolean) : []
-
-    if (list.length > 0) {
-      // Happy path: use real key_concepts
-      for (const concept of list) {
-        cards.push({
-          id:           `fc-${++seq}-${node.id}`,
-          front:        `Apa yang dimaksud dengan "${concept}" dalam konteks "${node.title}"?`,
-          back:         node.content
-            ? `${concept} adalah bagian dari "${node.title}". ${node.content.slice(0, 200).trimEnd()}…`
-            : `${concept} adalah salah satu konsep kunci dalam "${node.title}".`,
-          sourceNodeId: node.id,
-        })
-      }
-    } else if (node.content) {
-      // Fallback: no key_concepts but we have content — generate one content-based card
+    if (!concepts?.length) return
+    concepts.slice(0, 3).forEach((concept, i) => {
       cards.push({
-        id:           `fc-${++seq}-${node.id}-fallback`,
-        front:        `Jelaskan konsep utama dari "${node.title}" dengan kata-katamu sendiri!`,
-        back:         node.content.slice(0, 300).trimEnd() + (node.content.length > 300 ? '…' : ''),
-        sourceNodeId: node.id,
+        id: `${node?.id ?? 'x'}-${i}`,
+        front: `What is "${concept}"?`,
+        back: node?.content
+          ? `${concept} — ${node.content.slice(0, 180)}…`
+          : `Key concept from ${node?.title ?? 'this node'}: ${concept}.`,
+        sourceNodeId: node?.id,
       })
-    }
+    })
   }
-
-  if (sourceNode) addConcepts(sourceNode, sourceNode.key_concepts)
-  if (targetNode)  addConcepts(targetNode,  targetNode.key_concepts)
-
-  // Cap at 6 to keep the session manageable
+  if (sourceNode?.key_concepts?.length) {
+    addConcepts(sourceNode, sourceNode.key_concepts)
+  } else if (sourceNode?.content) {
+    cards.push({
+      id: `${sourceNode.id}-fallback`,
+      front: `Summarise: "${sourceNode.title}"`,
+      back: sourceNode.content.slice(0, 220),
+      sourceNodeId: sourceNode.id,
+    })
+  }
+  if (targetNode?.key_concepts?.length) {
+    addConcepts(targetNode, targetNode.key_concepts)
+  } else if (targetNode?.content && cards.length < 6) {
+    cards.push({
+      id: `${targetNode.id}-fallback`,
+      front: `Summarise: "${targetNode.title}"`,
+      back: targetNode.content.slice(0, 220),
+      sourceNodeId: targetNode.id,
+    })
+  }
   return cards.slice(0, 6)
 }
 
-// ── RouterData builder ────────────────────────────────────────────────────────
-// Assembles the shape expected by ConnectionTab from two real node objects.
-// Either node may be null (locked, 403, or missing).
 function buildRouterData(sourceNode, targetNode, sourceLabel, targetLabel) {
-  const srcTitle = sourceNode?.title ?? sourceLabel
-  const tgtTitle = targetNode?.title  ?? targetLabel
+  const srcConcepts = sourceNode?.key_concepts ?? []
+  const tgtConcepts = targetNode?.key_concepts ?? []
+  const keyConcepts = [...new Set([...srcConcepts, ...tgtConcepts])].slice(0, 8)
 
-  const allConcepts = [
-    ...(sourceNode?.key_concepts ?? []),
-    ...(targetNode?.key_concepts  ?? []),
-  ]
-  // Deduplicate while preserving order
-  const keyConcepts = [...new Set(allConcepts)]
+  const explanations = [
+    sourceNode && `"${sourceNode.title}" establishes the foundational concepts needed to progress.`,
+    targetNode && `"${targetNode.title}" builds upon these concepts.`,
+    keyConcepts.length > 0 && `Key shared concepts: ${keyConcepts.slice(0, 3).join(', ')}.`,
+  ].filter(Boolean)
 
-  const relationshipExplanation = (sourceNode && targetNode)
-    ? `"${tgtTitle}" berfokus pada konsep yang dibangun langsung di atas "${srcTitle}". ` +
-      `Menguasai ${srcTitle} memastikan kamu memiliki fondasi yang dibutuhkan untuk memahami ` +
-      `dan menerapkan ${tgtTitle} secara mendalam.`
-    : `${tgtTitle} merupakan materi lanjutan dari ${srcTitle}. ` +
-      `Pahami prasyarat ini untuk membuka potensi penuh dari koneksi ini.`
-
-  // Build material cards from real node content
   const materials = []
   if (sourceNode?.content) {
     materials.push({
-      id:      `mat-src-${sourceNode.id}`,
-      type:    'source',
-      title:   sourceNode.title,
+      id: `${sourceNode.id}-summary`,
+      type: 'summary',
+      title: sourceLabel,
       content: sourceNode.content,
     })
   }
   if (targetNode?.content) {
     materials.push({
-      id:      `mat-tgt-${targetNode.id}`,
-      type:    'summary',
-      title:   targetNode.title,
+      id: `${targetNode.id}-summary`,
+      type: 'summary',
+      title: targetLabel,
       content: targetNode.content,
     })
   }
 
   return {
-    relationshipExplanation,
+    sourceLabel,
+    targetLabel,
+    relationshipExplanation: explanations.join(' '),
     keyConcepts,
     materials,
     flashcards: buildFlashcards(sourceNode, targetNode),
-    sourceNodeId: sourceNode?.id,
-    targetNodeId: targetNode?.id,
-    sourceLabel:  srcTitle,
-    targetLabel:  tgtTitle,
   }
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function RouterModal({ router, onClose }) {
   const [tab,     setTab]     = useState('connection')
   const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
-  // Fetch real node content for both ends of the edge
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setData(null)
     setError(null)
 
-    // Fetch both nodes in parallel; 403 (locked) is treated as null, not error
     const fetchNode = (nodeId) =>
       graphApi.fetchNode(nodeId)
         .then((r) => r.data)
         .catch((err) => {
-          // 403 = locked node: return null (show graceful empty state)
-          // 404 = node doesn't exist in this session: return null
-          // err.status is set by the Axios interceptor in api.js (err.response is stripped)
           if (err?.status === 403 || err?.status === 404) return null
-          throw err   // any other error propagates
+          throw err
         })
 
     Promise.all([
@@ -165,9 +126,8 @@ export default function RouterModal({ router, onClose }) {
       })
 
     return () => { cancelled = true }
-  }, [router.sourceNodeId, router.targetNodeId])   // re-fetch when edge changes
+  }, [router.sourceNodeId, router.targetNodeId])
 
-  // Close on Escape
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -176,22 +136,18 @@ export default function RouterModal({ router, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pb-3 sm:pb-0"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(14px)' }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pb-3 sm:pb-0 nt-modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* ── Panel ──────────────────────────────────────────────────────────── */}
       <div
-        className="w-full flex flex-col rounded-3xl overflow-hidden"
+        className="w-full flex flex-col rounded-3xl overflow-hidden animate-[cardIn_0.22s_ease_forwards]"
         style={{
           maxWidth: 520,
           maxHeight: 'min(680px, 90vh)',
-          background: 'rgba(15,17,21,0.97)',
-          backdropFilter: 'blur(28px)',
-          WebkitBackdropFilter: 'blur(28px)',
-          border: '1px solid rgba(255,255,255,0.09)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,243,255,0.06)',
-          animation: 'cardIn 0.22s ease forwards',
+          background: 'var(--nt-bg)',
+          border: '1px solid var(--nt-border)',
+          boxShadow: 'var(--nt-shadow-out)',
         }}
       >
         {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -232,43 +188,38 @@ export default function RouterModal({ router, onClose }) {
 function RouterHeader({ sourceLabel, targetLabel, tab, onTabChange, onClose, flashcardCount }) {
   return (
     <div
-      className="flex-shrink-0 px-5 pt-5 pb-0"
-      style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+      className="flex-shrink-0 px-5 pt-5 pb-0 nt-modal-header"
     >
-      {/* Top row: icon + connection line + close */}
+      {/* Top row */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* Router icon */}
+          {/* Router icon — clay raised */}
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
-              background: 'rgba(0,243,255,0.08)',
-              border: '1px solid rgba(0,243,255,0.25)',
-              boxShadow: '0 0 16px rgba(0,243,255,0.12)',
+              background: 'rgba(53,78,71,0.10)',
+              border: '1px solid rgba(53,78,71,0.22)',
+              boxShadow: 'var(--nt-shadow-out-sm)',
             }}
           >
             <RouterHeaderSvg />
           </div>
           <div className="min-w-0">
-            <p
-              className="text-[10px] tracking-widest uppercase mb-0.5"
-              style={{ color: 'rgba(0,243,255,0.6)' }}
-            >
-              Router · Material Hub
-            </p>
-            {/* Source → Target breadcrumb */}
+            <p className="nt-section-label mb-0.5">Router · Material Hub</p>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <NodePill label={sourceLabel} color="cyan" />
-              <span className="text-white/20 text-xs">→</span>
-              <NodePill label={targetLabel} color="blue" />
+              <NodePill label={sourceLabel} color="source" />
+              <span className="text-xs" style={{ color: 'var(--nt-text-muted)' }}>→</span>
+              <NodePill label={targetLabel} color="target" />
             </div>
           </div>
         </div>
         <button
           onClick={onClose}
           aria-label="Close"
-          className="w-7 h-7 rounded-xl glass-1 flex items-center justify-center text-white/30
-            hover:text-white/70 text-xs transition-colors flex-shrink-0 ml-2"
+          className="w-7 h-7 rounded-xl nt-card flex items-center justify-center text-xs transition-colors flex-shrink-0 ml-2"
+          style={{ color: 'var(--nt-text-3)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-coral)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-text-3)' }}
         >
           ✕
         </button>
@@ -287,7 +238,7 @@ function RouterHeader({ sourceLabel, targetLabel, tab, onTabChange, onClose, fla
           onClick={() => onTabChange('flashcards')}
           label={`Flashcards${flashcardCount ? ` · ${flashcardCount}` : ''}`}
           icon="◈"
-          accentColor="rgba(0,255,163,0.8)"
+          accentColor="coral"
         />
       </div>
     </div>
@@ -301,31 +252,19 @@ function ConnectionTab({ data }) {
   return (
     <div className="pt-5 flex flex-col gap-4">
 
-      {/* ── Why this connection ──────────────────────────────────────────── */}
-      <Section
-        label="Why this connection exists"
-        accentColor="rgba(0,243,255,0.6)"
-        icon="⚡"
-      >
-        <p className="text-sm text-white/70 leading-relaxed">
+      {/* Why this connection */}
+      <Section label="Why this connection exists" accent="primary" icon="⚡">
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--nt-text-2)' }}>
           {data.relationshipExplanation}
         </p>
       </Section>
 
-      {/* ── Key concepts ────────────────────────────────────────────────── */}
+      {/* Key concepts */}
       {data.keyConcepts?.length > 0 && (
-        <Section label="Key concepts" accentColor="rgba(77,124,254,0.7)" icon="◈">
+        <Section label="Key concepts" accent="coral" icon="◈">
           <div className="flex flex-wrap gap-2">
             {data.keyConcepts.map((concept) => (
-              <span
-                key={concept}
-                className="text-xs px-2.5 py-1 rounded-full"
-                style={{
-                  background: 'rgba(77,124,254,0.08)',
-                  border: '1px solid rgba(77,124,254,0.2)',
-                  color: 'rgba(77,124,254,0.9)',
-                }}
-              >
+              <span key={concept} className="nt-chip">
                 {concept}
               </span>
             ))}
@@ -333,9 +272,9 @@ function ConnectionTab({ data }) {
         </Section>
       )}
 
-      {/* ── Materials ───────────────────────────────────────────────────── */}
+      {/* Materials */}
       {data.materials?.length > 0 && (
-        <Section label="Material" accentColor="rgba(0,243,255,0.6)" icon="▣">
+        <Section label="Material" accent="primary" icon="▣">
           <div className="flex flex-col gap-2.5">
             {data.materials.map((mat) => (
               <MaterialCard key={mat.id} material={mat} />
@@ -344,10 +283,10 @@ function ConnectionTab({ data }) {
         </Section>
       )}
 
-      {/* ── Empty state: both nodes locked ──────────────────────────────── */}
+      {/* Empty state */}
       {(!data.materials?.length && !data.keyConcepts?.length) && (
         <div className="py-8 text-center">
-          <p className="text-white/30 text-sm">
+          <p className="text-sm" style={{ color: 'var(--nt-text-3)' }}>
             🔒 Selesaikan prasyarat untuk membuka konten koneksi ini.
           </p>
         </div>
@@ -360,14 +299,6 @@ function ConnectionTab({ data }) {
 function MaterialCard({ material }) {
   const [expanded, setExpanded] = useState(false)
 
-  const typeColor = {
-    summary:  'rgba(0,243,255,0.6)',
-    example:  'rgba(0,255,163,0.6)',
-    article:  'rgba(77,124,254,0.7)',
-    document: 'rgba(191,0,255,0.6)',
-    source:   'rgba(255,160,30,0.6)',
-  }[material.type] ?? 'rgba(255,255,255,0.3)'
-
   const typeLabel = {
     summary: 'Summary', example: 'Example', article: 'Article',
     document: 'Doc', source: 'Source',
@@ -375,50 +306,39 @@ function MaterialCard({ material }) {
 
   return (
     <div
-      className="rounded-2xl overflow-hidden transition-all duration-200"
-      style={{
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.07)',
-      }}
+      className="nt-card rounded-2xl overflow-hidden transition-all duration-200"
+      style={{ boxShadow: 'var(--nt-shadow-out-sm)' }}
     >
-      {/* Card header — always visible */}
       <button
         className="w-full flex items-center gap-3 px-4 py-3 text-left"
         onClick={() => setExpanded((v) => !v)}
       >
+        <span className="nt-chip-coral text-[10px] flex-shrink-0">{typeLabel}</span>
+        <span className="text-sm flex-1 text-left" style={{ color: 'var(--nt-text)' }}>{material.title}</span>
         <span
-          className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
+          className="text-xs transition-transform duration-200"
           style={{
-            background: `${typeColor.replace('0.6', '0.1').replace('0.7', '0.1')}`,
-            border: `1px solid ${typeColor.replace('0.6', '0.25').replace('0.7', '0.25')}`,
-            color: typeColor,
+            color: 'var(--nt-text-3)',
+            transform: expanded ? 'rotate(180deg)' : 'none',
           }}
-        >
-          {typeLabel}
-        </span>
-        <span className="text-sm text-white/75 flex-1 text-left">{material.title}</span>
-        <span
-          className="text-white/25 text-xs transition-transform duration-200"
-          style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}
         >
           ▾
         </span>
       </button>
 
-      {/* Expandable content */}
       {expanded && (
         <div className="px-4 pb-4">
-          <div className="h-px bg-white/5 mb-3" />
-          <p className="text-sm text-white/60 leading-relaxed">{material.content}</p>
+          <div className="nt-divider mb-3" />
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--nt-text-2)' }}>{material.content}</p>
           {material.sourceUrl && (
             <a
               href={material.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-1 text-xs transition-colors"
-              style={{ color: 'rgba(0,243,255,0.55)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(0,243,255,0.9)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(0,243,255,0.55)' }}
+              style={{ color: 'var(--nt-primary-lt)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--nt-primary)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--nt-primary-lt)' }}
             >
               ↗ View source
             </a>
@@ -429,16 +349,17 @@ function MaterialCard({ material }) {
   )
 }
 
-// ── Reusable sub-components ───────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-function Section({ label, accentColor, icon, children }) {
+function Section({ label, accent, icon, children }) {
+  const color = accent === 'primary' ? 'var(--nt-primary-lt)' :
+                accent === 'coral'   ? 'var(--nt-coral)'       :
+                'var(--nt-text-3)'
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-2.5">
-        <span className="text-xs" style={{ color: accentColor }}>{icon}</span>
-        <p className="text-[10px] uppercase tracking-widest font-medium" style={{ color: accentColor }}>
-          {label}
-        </p>
+        <span className="text-xs" style={{ color }}>{icon}</span>
+        <p className="nt-section-label" style={{ color }}>{label}</p>
       </div>
       {children}
     </div>
@@ -446,16 +367,16 @@ function Section({ label, accentColor, icon, children }) {
 }
 
 function NodePill({ label, color }) {
-  const colors = {
-    cyan: { bg: 'rgba(0,243,255,0.07)', border: 'rgba(0,243,255,0.2)', text: 'rgba(0,243,255,0.85)' },
-    blue: { bg: 'rgba(77,124,254,0.07)', border: 'rgba(77,124,254,0.2)', text: 'rgba(77,124,254,0.9)' },
-  }[color] ?? { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', text: 'rgba(255,255,255,0.6)' }
-
+  const isPrimary = color === 'source'
   return (
     <span
       className="text-xs px-2 py-0.5 rounded-full max-w-[130px] truncate"
       title={label}
-      style={{ background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
+      style={{
+        background: isPrimary ? 'rgba(53,78,71,0.10)' : 'rgba(219,98,113,0.08)',
+        border: isPrimary ? '1px solid rgba(53,78,71,0.22)' : '1px solid rgba(219,98,113,0.22)',
+        color: isPrimary ? 'var(--nt-primary-lt)' : 'var(--nt-coral)',
+      }}
     >
       {label}
     </span>
@@ -463,15 +384,15 @@ function NodePill({ label, color }) {
 }
 
 function TabButton({ active, onClick, label, icon, accentColor }) {
-  const accent = accentColor ?? 'rgba(0,243,255,0.85)'
+  const color = accentColor === 'coral' ? 'var(--nt-coral)' : 'var(--nt-primary-lt)'
   return (
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-medium transition-all duration-200 rounded-t-xl"
       style={{
-        color:        active ? accent : 'rgba(240,242,245,0.35)',
-        background:   active ? 'rgba(255,255,255,0.04)' : 'transparent',
-        borderBottom: active ? `2px solid ${accent}` : '2px solid transparent',
+        color:        active ? color : 'var(--nt-text-3)',
+        background:   active ? 'rgba(53,78,71,0.06)' : 'transparent',
+        borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
       }}
     >
       <span>{icon}</span>
@@ -483,14 +404,9 @@ function TabButton({ active, onClick, label, icon, accentColor }) {
 function LoadingState() {
   return (
     <div className="py-12 flex flex-col items-center gap-3">
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center"
-        style={{ border: '1px solid rgba(0,243,255,0.2)', animation: 'glowPulse 1.5s ease-in-out infinite' }}
-      >
-        <span style={{ color: 'rgba(0,243,255,0.7)', fontSize: 16 }}>▣</span>
-      </div>
-      <p className="text-xs text-white/30 font-mono tracking-widest">ROUTER CONNECTING…</p>
-      <p className="text-xs text-white/20">Loading node content</p>
+      <div className="nt-spinner" />
+      <p className="nt-section-label">Connecting…</p>
+      <p className="text-xs" style={{ color: 'var(--nt-text-muted)' }}>Loading node content</p>
     </div>
   )
 }
@@ -498,15 +414,9 @@ function LoadingState() {
 function ErrorState({ message, onClose }) {
   return (
     <div className="py-10 text-center">
-      <p className="text-white/40 text-sm mb-2">Koneksi terputus</p>
-      <p className="text-white/25 text-xs mb-5 max-w-xs mx-auto">{message}</p>
-      <button
-        onClick={onClose}
-        className="btn-liquid px-5 py-2 text-xs"
-        style={{ borderColor: 'rgba(255,255,255,0.1)' }}
-      >
-        Tutup
-      </button>
+      <p className="text-sm mb-2" style={{ color: 'var(--nt-text-2)' }}>Koneksi terputus</p>
+      <p className="text-xs mb-5 max-w-xs mx-auto" style={{ color: 'var(--nt-text-3)' }}>{message}</p>
+      <button onClick={onClose} className="nt-btn-secondary px-5 py-2 text-xs">Tutup</button>
     </div>
   )
 }
@@ -514,13 +424,13 @@ function ErrorState({ message, onClose }) {
 function RouterHeaderSvg() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="6" width="12" height="7" rx="2" stroke="rgba(0,243,255,0.85)" strokeWidth="1.4" />
-      <circle cx="5"  cy="9.5" r="1" fill="rgba(0,243,255,0.85)" />
-      <circle cx="8"  cy="9.5" r="1" fill="rgba(0,243,255,0.85)" />
-      <circle cx="11" cy="9.5" r="1" fill="rgba(0,243,255,0.85)" />
-      <line x1="5"  y1="6" x2="5"  y2="4"   stroke="rgba(0,243,255,0.85)" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="8"  y1="6" x2="8"  y2="2.5" stroke="rgba(0,243,255,0.85)" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="11" y1="6" x2="11" y2="4"   stroke="rgba(0,243,255,0.85)" strokeWidth="1.4" strokeLinecap="round" />
+      <rect x="2" y="6" width="12" height="7" rx="2" stroke="var(--nt-primary-lt)" strokeWidth="1.4" />
+      <circle cx="5"  cy="9.5" r="1" fill="var(--nt-primary-lt)" />
+      <circle cx="8"  cy="9.5" r="1" fill="var(--nt-primary-lt)" />
+      <circle cx="11" cy="9.5" r="1" fill="var(--nt-primary-lt)" />
+      <line x1="5"  y1="6" x2="5"  y2="4"   stroke="var(--nt-primary-lt)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="8"  y1="6" x2="8"  y2="2.5" stroke="var(--nt-primary-lt)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="11" y1="6" x2="11" y2="4"   stroke="var(--nt-primary-lt)" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   )
 }

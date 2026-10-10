@@ -43,7 +43,7 @@ export default function EnergyEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: 'rgba(255,255,255,0.10)',
+          stroke: 'rgba(53,78,71,0.18)',
           strokeWidth: 1.5,
           strokeDasharray: '4 4',
           fill: 'none',
@@ -55,18 +55,16 @@ export default function EnergyEdge({
   if (isCut) {
     return (
       <g>
-        {/* Dim dashed cable */}
         <BaseEdge
           id={id}
           path={edgePath}
           style={{
-            stroke: 'rgba(255,80,80,0.25)',
+            stroke: 'rgba(219,98,113,0.28)',
             strokeWidth: 1.5,
             strokeDasharray: '6 6',
             fill: 'none',
           }}
         />
-        {/* Cut marker at centre */}
         <EdgeLabelRenderer>
           <div
             style={{
@@ -78,10 +76,7 @@ export default function EnergyEdge({
           >
             <span
               className="text-xs font-bold"
-              style={{
-                color: 'rgba(255,80,80,0.6)',
-                textShadow: '0 0 6px rgba(255,80,80,0.4)',
-              }}
+              style={{ color: 'rgba(219,98,113,0.70)' }}
             >
               ✂
             </span>
@@ -95,42 +90,44 @@ export default function EnergyEdge({
   const hasRouter = Boolean(data.router)
   const hasNote   = Boolean(data.note)
 
-  // If both markers exist, offset them slightly so they don't overlap
   const routerOffset = hasNote ? -14 : 0
   const noteOffset   = hasRouter ? 14 : 0
 
   return (
     <g>
-      {/* Glow halo */}
+      {/* Outer glow halo — lime tint to match cable colour */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(0,243,255,0.15)"
-        strokeWidth={6}
+        stroke="rgba(148, 220, 40, 0.12)"
+        strokeWidth={8}
         strokeLinecap="round"
         style={{ filter: 'blur(4px)' }}
       />
 
-      {/* Main cable — cable-draw animates the stroke on first mount */}
+      {/* Main cable — lime-tinted with soft neon glow */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(0,243,255,0.6)"
+        stroke="rgba(148, 220, 40, 0.55)"
         strokeWidth={1.5}
         strokeLinecap="round"
         className="cable-draw"
+        style={{
+          filter: 'drop-shadow(0 0 2px rgba(148, 220, 40, 0.50))',
+        }}
       />
 
-      {/* Animated energy particle — delayed so it starts after the cable finishes drawing */}
+      {/* Animated energy particle — bright neon lime */}
       <path
         d={edgePath}
         fill="none"
-        stroke="#00F3FF"
-        strokeWidth={2}
+        stroke="#a8e63d"
+        strokeWidth={2.5}
         strokeLinecap="round"
-        strokeDasharray="12 80"
+        strokeDasharray="10 90"
         style={{
-          filter: 'drop-shadow(0 0 4px #00F3FF)',
+          filter: 'drop-shadow(0 0 4px #a8e63d) drop-shadow(0 0 8px #7ec800)',
           animation: 'energyParticle 1.8s linear infinite',
           animationDelay: '0.65s',
         }}
@@ -193,20 +190,20 @@ function RouterMarker({ router, onOpen }) {
       aria-label="Open material router"
       className="flex items-center justify-center rounded-lg transition-all duration-200"
       style={{
-        width: 22,
-        height: 22,
-        background: 'rgba(16,18,22,0.92)',
-        border: '1px solid rgba(0,243,255,0.5)',
-        boxShadow: '0 0 10px rgba(0,243,255,0.3), 0 0 20px rgba(0,243,255,0.12)',
+        width: 24,
+        height: 24,
+        background: 'var(--nt-marker-bg, rgba(15,35,30,0.88))',
+        border: '1.5px solid rgba(148,220,40,0.70)',
+        boxShadow: '0 0 6px rgba(148,220,40,0.30), inset 0 0 4px rgba(0,0,0,0.40)',
         cursor: 'pointer',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 0 16px rgba(0,243,255,0.6), 0 0 32px rgba(0,243,255,0.2)'
-        e.currentTarget.style.borderColor = 'rgba(0,243,255,0.9)'
+        e.currentTarget.style.borderColor = 'rgba(148,220,40,1)'
+        e.currentTarget.style.boxShadow   = '0 0 10px rgba(148,220,40,0.55), inset 0 0 4px rgba(0,0,0,0.40)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 0 10px rgba(0,243,255,0.3), 0 0 20px rgba(0,243,255,0.12)'
-        e.currentTarget.style.borderColor = 'rgba(0,243,255,0.5)'
+        e.currentTarget.style.borderColor = 'rgba(148,220,40,0.70)'
+        e.currentTarget.style.boxShadow   = '0 0 6px rgba(148,220,40,0.30), inset 0 0 4px rgba(0,0,0,0.40)'
       }}
     >
       <RouterSvg />
@@ -214,7 +211,6 @@ function RouterMarker({ router, onOpen }) {
   )
 }
 
-// ── WifiMarker ────────────────────────────────────────────────────────────────
 function WifiMarker({ note, onOpen }) {
   return (
     <button
@@ -223,20 +219,20 @@ function WifiMarker({ note, onOpen }) {
       aria-label="Open personal note"
       className="flex items-center justify-center rounded-lg transition-all duration-200"
       style={{
-        width: 22,
-        height: 22,
-        background: 'rgba(16,18,22,0.92)',
-        border: '1px solid rgba(191,0,255,0.5)',
-        boxShadow: '0 0 10px rgba(191,0,255,0.3), 0 0 20px rgba(191,0,255,0.12)',
+        width: 24,
+        height: 24,
+        background: 'var(--nt-marker-bg, rgba(15,35,30,0.88))',
+        border: '1.5px solid rgba(219,98,113,0.70)',
+        boxShadow: '0 0 6px rgba(219,98,113,0.30), inset 0 0 4px rgba(0,0,0,0.40)',
         cursor: 'pointer',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 0 16px rgba(191,0,255,0.6), 0 0 32px rgba(191,0,255,0.2)'
-        e.currentTarget.style.borderColor = 'rgba(191,0,255,0.9)'
+        e.currentTarget.style.borderColor = 'rgba(219,98,113,1)'
+        e.currentTarget.style.boxShadow   = '0 0 10px rgba(219,98,113,0.55), inset 0 0 4px rgba(0,0,0,0.40)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 0 10px rgba(191,0,255,0.3), 0 0 20px rgba(191,0,255,0.12)'
-        e.currentTarget.style.borderColor = 'rgba(191,0,255,0.5)'
+        e.currentTarget.style.borderColor = 'rgba(219,98,113,0.70)'
+        e.currentTarget.style.boxShadow   = '0 0 6px rgba(219,98,113,0.30), inset 0 0 4px rgba(0,0,0,0.40)'
       }}
     >
       <WifiSvg />
@@ -244,15 +240,14 @@ function WifiMarker({ note, onOpen }) {
   )
 }
 
-// ── Inline SVG icons ──────────────────────────────────────────────────────────
 function RouterSvg() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="6" width="12" height="7" rx="2" stroke="rgba(0,243,255,0.9)" strokeWidth="1.5" />
-      <circle cx="5"  cy="9.5" r="1" fill="rgba(0,243,255,0.9)" />
-      <circle cx="8"  cy="9.5" r="1" fill="rgba(0,243,255,0.9)" />
-      <circle cx="11" cy="9.5" r="1" fill="rgba(0,243,255,0.9)" />
-      <line x1="8" y1="6" x2="8" y2="2.5" stroke="rgba(0,243,255,0.9)" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="2" y="6" width="12" height="7" rx="2" stroke="rgba(148,220,40,0.90)" strokeWidth="1.5" />
+      <circle cx="5"  cy="9.5" r="1" fill="rgba(148,220,40,0.90)" />
+      <circle cx="8"  cy="9.5" r="1" fill="rgba(148,220,40,0.90)" />
+      <circle cx="11" cy="9.5" r="1" fill="rgba(148,220,40,0.90)" />
+      <line x1="8" y1="6" x2="8" y2="2.5" stroke="rgba(148,220,40,0.90)" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }
@@ -260,9 +255,9 @@ function RouterSvg() {
 function WifiSvg() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-      <path d="M3 8 C5 6 11 6 13 8"      stroke="rgba(191,0,255,0.9)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M5 10.5 C6.3 9 9.7 9 11 10.5" stroke="rgba(191,0,255,0.9)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <circle cx="8" cy="13" r="1.2" fill="rgba(191,0,255,0.9)" />
+      <path d="M3 8 C5 6 11 6 13 8"          stroke="rgba(219,98,113,0.90)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <path d="M5 10.5 C6.3 9 9.7 9 11 10.5" stroke="rgba(219,98,113,0.90)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <circle cx="8" cy="13" r="1.2" fill="rgba(219,98,113,0.90)" />
     </svg>
   )
 }

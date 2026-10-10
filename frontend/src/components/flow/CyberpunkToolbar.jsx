@@ -1,10 +1,6 @@
 /**
  * CyberpunkToolbar — floating vertical pill toolbar, right side of canvas.
- *
- * Container  : soft claymorphism pill (.clay-toolbar in index.css)
- * Idle button: flush with the pill surface
- * Active tool: "pressed in" concave clay effect — inset shadows deepen
- * Hover      : slight lift from the pill surface
+ * M-19: Skeuomorphic clay pill. All neon accent colours replaced with nt-primary/coral.
  *
  * Props:
  *   activeTool    — from useCanvasTools()
@@ -36,7 +32,7 @@ export default function CyberpunkToolbar({
           label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           active={false}
           onClick={onToggleTheme}
-          accentColor="#f5c842"
+          accentColor="var(--nt-coral)"
         />
 
         {/* Divider */}
@@ -48,7 +44,7 @@ export default function CyberpunkToolbar({
           label="Pan — drag canvas (H)"
           active={activeTool === 'pan'}
           onClick={() => onSelectTool('pan')}
-          accentColor="#00c8dc"
+          accentColor="var(--nt-primary)"
         />
 
         {/* Zoom In */}
@@ -76,7 +72,7 @@ export default function CyberpunkToolbar({
           label="Wire cutter — prune path (C)"
           active={activeTool === 'cut'}
           onClick={() => onSelectTool('cut')}
-          accentColor="#ff5a5a"
+          accentColor="var(--nt-coral)"
         />
 
         {/* Router */}
@@ -85,7 +81,7 @@ export default function CyberpunkToolbar({
           label="Router — attach material hub (R)"
           active={activeTool === 'router'}
           onClick={() => onSelectTool('router')}
-          accentColor="#00c8dc"
+          accentColor="var(--nt-primary)"
         />
 
         {/* Wi-Fi Note */}
@@ -94,7 +90,7 @@ export default function CyberpunkToolbar({
           label="Wi-Fi note — annotate path (N)"
           active={activeTool === 'note'}
           onClick={() => onSelectTool('note')}
-          accentColor="#bf00ff"
+          accentColor="var(--nt-primary-lt)"
         />
 
         {/* Divider */}
@@ -106,7 +102,7 @@ export default function CyberpunkToolbar({
           label="Grow — expand knowledge branch (G)"
           active={activeTool === 'grow'}
           onClick={() => onSelectTool('grow')}
-          accentColor="#00ffa3"
+          accentColor="var(--nt-primary)"
         />
       </div>
     </div>
@@ -135,13 +131,7 @@ function Divider() {
  *             Accent colour applied to icon only, not background.
  */
 function ToolButton({ icon, label, active, onClick, accentColor }) {
-  const accent = accentColor ?? '#00c8dc'
-
-  // Active = pressed into the clay surface
-  const activeBoxShadow =
-    'inset 2px 2px 5px rgba(0,0,0,0.35), inset -2px -2px 5px rgba(255,255,255,0.04)'
-  const activeLightBoxShadow =
-    'inset 2px 2px 5px rgba(155,165,180,0.50), inset -2px -2px 5px rgba(255,255,255,0.90)'
+  const accent = accentColor ?? 'var(--nt-primary)'
 
   return (
     <button
@@ -150,13 +140,28 @@ function ToolButton({ icon, label, active, onClick, accentColor }) {
       aria-label={label}
       className={[
         'relative w-9 h-9 rounded-2xl flex items-center justify-center',
-        'transition-all duration-200 select-none focus-visible:outline-none',
-        'focus-visible:ring-2 focus-visible:ring-cyan-400/50',
-        active
-          ? 'clay-btn-active'                              // CSS class handles inset shadow
-          : 'text-slate-500 dark:text-slate-400',         // inactive muted colour
+        'transition-all duration-150 select-none focus-visible:outline-none',
+        'focus-visible:ring-2',
+        active ? 'clay-btn-active' : '',
       ].filter(Boolean).join(' ')}
-      style={active ? { color: accent } : undefined}
+      style={active
+        ? { color: accent, transform: 'scale(1)' }
+        : { color: 'var(--nt-text-3)', transform: 'scale(1)' }
+      }
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'scale(1.22)'
+        e.currentTarget.style.color     = active ? accent : 'var(--toolbar-icon-hover)'
+        if (!active) {
+          e.currentTarget.style.background  = 'var(--nt-bg, rgba(255,255,255,0.18))'
+          e.currentTarget.style.boxShadow   = '0 3px 10px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform   = 'scale(1)'
+        e.currentTarget.style.color       = active ? accent : 'var(--nt-text-3)'
+        e.currentTarget.style.background  = ''
+        e.currentTarget.style.boxShadow   = ''
+      }}
     >
       {typeof icon === 'string'
         ? <span style={{ fontSize: 15, lineHeight: 1 }}>{icon}</span>

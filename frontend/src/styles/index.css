@@ -1,29 +1,154 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Geist Mono Variable — self-hosted via @fontsource-variable/geist-mono     */
+/* Imported once in main.jsx; this file needs no @import for the font.        */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS Variables — Theme System (10.4) ──────────────────────────────────── */
-/* Dark mode defaults (default — no class needed).                             */
-:root {
-  --bg-primary:    #111315;
-  --bg-secondary:  #151719;
-  --bg-elevated:   #202326;
-  --accent-cyan:   #00F3FF;
-  --accent-purple: #BF00FF;
-  --accent-blue:   #4D7CFE;
-  --accent-green:  #00FFA3;
-  --text-primary:  #F0F2F5;
-  --text-muted:    rgba(240,242,245,0.5);
-  --border-subtle: rgba(255,255,255,0.07);
-  --border-glass:  rgba(255,255,255,0.12);
+/* ═══════════════════════════════════════════════════════════════════════════
+   NeuroTree M-19 Design System — Skeuomorphic / Organic
+   Two themes driven by html.theme-light (light, default) and html.dark (dark).
+   All neon/cyberpunk tokens replaced. Lamp animations retained as warm glow.
+   Global typeface: Geist Mono Variable (100–900).
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-  /* Node label — dark mode */
-  --text-node-label:  rgba(240,242,245,0.70);
-  --text-node-locked: rgba(255,255,255,0.25);
-  /* Toolbar icon hover — dark mode */
-  --toolbar-icon-hover: rgba(240,242,245,0.85);
+/* ── Light mode (DEFAULT) ──────────────────────────────────────────────────── */
+:root {
+  /* Palette */
+  --nt-bg:          #f5e9ce;
+  --nt-bg-2:        #eddfc0;
+  --nt-bg-3:        #e5d4ae;
+  --nt-surface:     #f0e2c4;
+  --nt-primary:     #354e47;
+  --nt-primary-dk:  #243630;
+  --nt-primary-lt:  #4e7267;
+  --nt-coral:       #db6271;
+  --nt-coral-dk:    #c04f5e;
+  --nt-coral-lt:    #e8909a;
+  --nt-text:        #2c3e38;
+  --nt-text-2:      #4a5e57;
+  --nt-text-3:      #6b7c76;
+  --nt-text-muted:  rgba(44, 62, 56, 0.45);
+  --nt-border:      rgba(53, 78, 71, 0.08);
+  --nt-border-2:    rgba(53, 78, 71, 0.16);
+
+  /* Skeuomorphic shadow recipe — light */
+  --nt-shadow-out:
+    5px 5px 12px rgba(160, 140, 110, 0.45),
+   -3px -3px  8px rgba(255, 255, 255, 0.85),
+    inset  1px  1px 2px rgba(255, 255, 255, 0.90),
+    inset -1px -1px 2px rgba(160, 140, 110, 0.30);
+  --nt-shadow-out-sm:
+    3px 3px 7px rgba(160, 140, 110, 0.40),
+   -2px -2px 5px rgba(255, 255, 255, 0.80),
+    inset  1px  1px 1px rgba(255, 255, 255, 0.85),
+    inset -1px -1px 1px rgba(160, 140, 110, 0.25);
+  --nt-shadow-in:
+    inset  3px  3px 7px rgba(160, 140, 110, 0.40),
+    inset -3px -3px 7px rgba(255, 255, 255, 0.80);
+  --nt-shadow-header:
+    3px 3px 8px rgba(155, 135, 105, 0.38),
+   -2px -2px 6px rgba(255, 255, 255, 0.82),
+    inset  1px  1px 1px rgba(255, 255, 255, 0.90),
+    inset -1px -1px 1px rgba(155, 135, 105, 0.28);
+
+  /* Node label */
+  --text-node-label:  rgba(44, 62, 56, 0.80);
+  --text-node-locked: rgba(44, 62, 56, 0.28);
+  /* Toolbar icon hover */
+  --toolbar-icon-hover: rgba(44, 62, 56, 0.90);
+  /* Edge markers (router / wifi) — dark pill on any bg */
+  --nt-marker-bg: rgba(20, 38, 30, 0.90);
+
+  /* ── Typography — Geist Mono Variable ─────────────────────────────────── */
+  --font-primary:   'Geist Mono Variable', 'GeistMono', ui-monospace, monospace;
+
+  /* Semantic text colors — light */
+  --nt-text-link:        #354e47;
+  --nt-text-interactive: #354e47;
+  --nt-text-placeholder: rgba(44, 62, 56, 0.38);
+
+  /* Font-weight scale */
+  --fw-thin:        100;
+  --fw-extralight:  200;
+  --fw-light:       300;
+  --fw-regular:     400;
+  --fw-medium:      500;
+  --fw-semibold:    600;
+  --fw-bold:        700;
+  --fw-extrabold:   800;
+  --fw-black:       900;
+
+  /* Legacy aliases kept for backward compat */
+  --bg-primary:    var(--nt-bg);
+  --bg-secondary:  var(--nt-bg-2);
+  --bg-elevated:   var(--nt-surface);
+  --text-primary:  var(--nt-text);
+  --text-muted:    var(--nt-text-muted);
+  --border-subtle: var(--nt-border);
+  --border-glass:  var(--nt-border-2);
+  --accent-cyan:   var(--nt-primary-lt);
+  --accent-green:  var(--nt-primary);
+}
+
+/* ── Dark mode — html.dark ─────────────────────────────────────────────────── */
+html.dark {
+  --nt-bg:          #061a1e;
+  --nt-bg-2:        #0a2529;
+  --nt-bg-3:        #0e3038;
+  --nt-surface:     #104540;
+  --nt-primary:     #2a835f;
+  --nt-primary-dk:  #1d6048;
+  --nt-primary-lt:  #8bbb92;
+  --nt-coral:       #db6271;
+  --nt-coral-dk:    #c04f5e;
+  --nt-coral-lt:    #e8909a;
+  --nt-text:        #d8ede6;
+  --nt-text-2:      #9fc4b5;
+  --nt-text-3:      #6a9e8e;
+  --nt-text-muted:  rgba(216, 237, 230, 0.42);
+  --nt-border:      rgba(139, 187, 146, 0.08);
+  --nt-border-2:    rgba(139, 187, 146, 0.18);
+
+  --nt-shadow-out:
+     4px  4px 10px rgba(0, 0, 0, 0.55),
+    -3px -3px  8px rgba(139, 187, 146, 0.07),
+     inset  1px  1px 2px rgba(139, 187, 146, 0.08),
+     inset -1px -1px 2px rgba(0, 0, 0, 0.35);
+  --nt-shadow-out-sm:
+     3px  3px  7px rgba(0, 0, 0, 0.50),
+    -2px -2px  5px rgba(139, 187, 146, 0.06),
+     inset  1px  1px 1px rgba(139, 187, 146, 0.07),
+     inset -1px -1px 1px rgba(0, 0, 0, 0.30);
+  --nt-shadow-in:
+    inset  3px  3px 7px rgba(0, 0, 0, 0.50),
+    inset -3px -3px 7px rgba(139, 187, 146, 0.07);
+  --nt-shadow-header:
+     3px  3px  8px rgba(0, 0, 0, 0.50),
+    -2px -2px  6px rgba(139, 187, 146, 0.06),
+     inset  1px  1px 1px rgba(139, 187, 146, 0.07),
+     inset -1px -1px 1px rgba(0, 0, 0, 0.30);
+
+  --text-node-label:  rgba(216, 237, 230, 0.78);
+  --text-node-locked: rgba(216, 237, 230, 0.22);
+  --toolbar-icon-hover: rgba(216, 237, 230, 0.88);
+  --nt-marker-bg: rgba(6, 20, 18, 0.92);
+
+  /* Semantic text colors — dark */
+  --nt-text-link:        #8bbb92;
+  --nt-text-interactive: #8bbb92;
+  --nt-text-placeholder: rgba(216, 237, 230, 0.32);
+
+  /* Legacy aliases */
+  --bg-primary:    var(--nt-bg);
+  --bg-secondary:  var(--nt-bg-2);
+  --bg-elevated:   var(--nt-surface);
+  --text-primary:  var(--nt-text);
+  --text-muted:    var(--nt-text-muted);
+  --border-subtle: var(--nt-border);
+  --border-glass:  var(--nt-border-2);
+  --accent-cyan:   var(--nt-primary-lt);
+  --accent-green:  var(--nt-primary);
 }
 
 /* ── Global Reset ──────────────────────────────────────────────────────────── */
@@ -32,373 +157,399 @@
 html, body, #root {
   width: 100%; height: 100%;
   margin: 0; padding: 0;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--nt-bg);
+  color: var(--nt-text);
+  font-family: var(--font-primary);
+  font-weight: var(--fw-regular);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Elegant Background (10.3) ────────────────────────────────────────────── */
+/* ── Typography hierarchy utility classes ──────────────────────────────────── */
+/* Usage: add one class to set the weight semantic clearly.                     */
+.nt-type-display   { font-weight: var(--fw-bold);      letter-spacing: -0.02em; }
+.nt-type-heading   { font-weight: var(--fw-semibold);  letter-spacing: -0.01em; }
+.nt-type-subhead   { font-weight: var(--fw-medium);    letter-spacing: 0; }
+.nt-type-body      { font-weight: var(--fw-regular);   letter-spacing: 0; }
+.nt-type-label     { font-weight: var(--fw-medium);    letter-spacing: 0.03em; font-size: 0.75rem; }
+.nt-type-caption   { font-weight: var(--fw-light);     letter-spacing: 0.02em; color: var(--nt-text-3); }
+.nt-type-muted     { font-weight: var(--fw-light);     color: var(--nt-text-3); }
+.nt-type-code      { font-weight: var(--fw-regular);   letter-spacing: 0.01em; }
+.nt-type-nav       { font-weight: var(--fw-medium);    letter-spacing: 0.04em; font-size: 0.8125rem; }
+.nt-type-btn       { font-weight: var(--fw-semibold);  letter-spacing: 0.05em; }
+
+/* Placeholder colour via CSS variable */
+::placeholder { color: var(--nt-text-placeholder); opacity: 1; }
+
+/* ── App Background ────────────────────────────────────────────────────────── */
 .bg-app {
-  background-color: #111315;
+  background-color: var(--nt-bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(77,124,254,0.10) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 0% 0%,   rgba(0,243,255,0.04)  0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 100% 20%, rgba(191,0,255,0.04)  0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 20% 10%,  rgba(53, 78, 71, 0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 80%,  rgba(219, 98, 113, 0.05) 0%, transparent 60%);
+}
+html.dark .bg-app {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 20% 10%,  rgba(42, 131, 95, 0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 80%,  rgba(219, 98, 113, 0.06) 0%, transparent 60%);
 }
 
-/* ── Glass Levels (10.5) ──────────────────────────────────────────────────── */
-/* Level 1 — Subtle */
-.glass-1 {
-  background: rgba(255,255,255,0.03);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.06);
-}
-/* Level 2 — Standard */
-.glass-2 {
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
-}
-/* Level 3 — Focus (modal, quiz) */
-.glass-3 {
-  background: rgba(26,29,33,0.85);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.10);
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   Skeuomorphic Surface Classes
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Claymorphism Surface (Dashboard cards + header) ─────────────────────── */
-/*
-  Soft claymorphism formula (polished, not aggressive):
-
-  Surface colour = slightly raised above page background.
-  Dark  surface: #1c2535  (a shade lighter than #111315 page bg)
-  Light surface: #eaeef4  (a shade darker  than #f0f2f5 page bg)
-
-  Shadow palette (rgba so opacity is tunable without new hex values):
-  Dark:
-    outer-dark  = rgba(0,0,0, 0.40)       — soft depth shadow
-    outer-light = rgba(255,255,255, 0.04) — very faint ambient lift
-    inset-light = rgba(255,255,255, 0.05) — subtle inner catch-light
-    inset-dark  = rgba(0,0,0, 0.28)       — gentle inner recession
-
-  Light:
-    outer-dark  = rgba(160,170,185, 0.55) — warm gray shadow
-    outer-light = rgba(255,255,255, 0.90) — crisp white highlight
-    inset-light = rgba(255,255,255, 0.95) — inner top shine
-    inset-dark  = rgba(160,170,185, 0.40) — inner bottom recession
-*/
-
-/* ── Shared surface class — used by both cards AND header ─────────────────── */
+/* ── clay-surface — flat bg only (sidebar, sections) ──────────────────────── */
 .clay-surface {
-  background-color: #1c2535;
-}
-html.theme-light .clay-surface {
-  background-color: #eaeef4;
+  background-color: var(--nt-surface);
 }
 
-/* ── Card shadow (resting) ────────────────────────────────────────────────── */
+/* ── clay-card — raised physical card ─────────────────────────────────────── */
 .clay-card {
-  background-color: #1c2535;
-  box-shadow:
-     4px  4px 10px rgba(0,0,0,0.40),
-    -3px -3px  8px rgba(255,255,255,0.04),
-    inset  1px  1px 2px rgba(255,255,255,0.05),
-    inset -1px -1px 2px rgba(0,0,0,0.28);
+  background-color: var(--nt-surface);
+  box-shadow: var(--nt-shadow-out);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-
-html.theme-light .clay-card {
-  background-color: #eaeef4;
-  box-shadow:
-     4px  4px 10px rgba(160,170,185,0.55),
-    -3px -3px  8px rgba(255,255,255,0.90),
-    inset  1px  1px 2px rgba(255,255,255,0.95),
-    inset -1px -1px 2px rgba(160,170,185,0.40);
-}
-
-/* ── Card shadow (hover — gently rises) ──────────────────────────────────── */
 .clay-card:hover {
   box-shadow:
-     6px  6px 14px rgba(0,0,0,0.45),
-    -4px -4px 10px rgba(255,255,255,0.05),
-    inset  1px  1px 2px rgba(255,255,255,0.05),
-    inset -1px -1px 2px rgba(0,0,0,0.28);
+    6px 6px 14px rgba(160, 140, 110, 0.48),
+   -4px -4px 10px rgba(255, 255, 255, 0.88),
+    inset  1px  1px 2px rgba(255, 255, 255, 0.90),
+    inset -1px -1px 2px rgba(160, 140, 110, 0.30);
 }
-html.theme-light .clay-card:hover {
-  box-shadow:
-     6px  6px 14px rgba(150,160,175,0.55),
-    -4px -4px 10px rgba(255,255,255,0.95),
-    inset  1px  1px 2px rgba(255,255,255,0.95),
-    inset -1px -1px 2px rgba(150,160,175,0.40);
-}
-
-/* ── Card shadow (active/pressed — sinks in) ─────────────────────────────── */
 .clay-card:active {
-  box-shadow:
-     2px  2px  5px rgba(0,0,0,0.40),
-    -1px -1px  4px rgba(255,255,255,0.04),
-    inset  2px  2px 5px rgba(0,0,0,0.32),
-    inset -2px -2px 5px rgba(255,255,255,0.04);
+  box-shadow: var(--nt-shadow-in);
 }
-html.theme-light .clay-card:active {
+html.dark .clay-card {
+  background-color: var(--nt-bg-2);
+  box-shadow: var(--nt-shadow-out);
+}
+html.dark .clay-card:hover {
   box-shadow:
-     2px  2px  5px rgba(160,170,185,0.45),
-    -1px -1px  4px rgba(255,255,255,0.80),
-    inset  2px  2px 5px rgba(160,170,185,0.45),
-    inset -2px -2px 5px rgba(255,255,255,0.80);
+    5px 5px 12px rgba(0, 0, 0, 0.58),
+   -3px -3px  8px rgba(139, 187, 146, 0.08),
+    inset  1px  1px 2px rgba(139, 187, 146, 0.09),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.38);
+}
+html.dark .clay-card:active {
+  box-shadow: var(--nt-shadow-in);
 }
 
-/* ── Header clay shadow (no hover state — static element) ────────────────── */
+/* ── clay-header — top bar ─────────────────────────────────────────────────── */
 .clay-header {
-  background-color: #1c2535;
-  box-shadow:
-     3px  3px  8px rgba(0,0,0,0.38),
-    -2px -2px  6px rgba(255,255,255,0.04),
-    inset  1px  1px 1px rgba(255,255,255,0.05),
-    inset -1px -1px 1px rgba(0,0,0,0.25);
+  background-color: var(--nt-surface);
+  box-shadow: var(--nt-shadow-header);
 }
-html.theme-light .clay-header {
-  background-color: #eaeef4;
-  box-shadow:
-     3px  3px  8px rgba(155,165,180,0.50),
-    -2px -2px  6px rgba(255,255,255,0.92),
-    inset  1px  1px 1px rgba(255,255,255,0.95),
-    inset -1px -1px 1px rgba(155,165,180,0.35);
+html.dark .clay-header {
+  background-color: var(--nt-bg-2);
+  box-shadow: var(--nt-shadow-header);
 }
 
-/* ── Concave icon well inside a clay card ────────────────────────────────── */
+/* ── clay-icon — concave well (icon containers, recessed inputs) ───────────── */
 .clay-icon {
-  background-color: #1c2535;
-  box-shadow:
-    inset  2px  2px 5px rgba(0,0,0,0.35),
-    inset -2px -2px 5px rgba(255,255,255,0.04);
+  background-color: var(--nt-bg-2);
+  box-shadow: var(--nt-shadow-in);
 }
-html.theme-light .clay-icon {
-  background-color: #eaeef4;
-  box-shadow:
-    inset  2px  2px 5px rgba(160,170,185,0.50),
-    inset -2px -2px 5px rgba(255,255,255,0.90);
+html.dark .clay-icon {
+  background-color: var(--nt-bg);
+  box-shadow: var(--nt-shadow-in);
 }
 
-/* ── Toolbar pill — CyberpunkToolbar container ────────────────────────────── */
-/* Same surface as cards, pill-shaped (rounded-[2rem] set in JSX).            */
+/* ── clay-toolbar — pill toolbar ───────────────────────────────────────────── */
 .clay-toolbar {
-  background-color: #1c2535;
-  box-shadow:
-     3px  3px  8px rgba(0,0,0,0.38),
-    -2px -2px  6px rgba(255,255,255,0.04),
-    inset  1px  1px 1px rgba(255,255,255,0.05),
-    inset -1px -1px 1px rgba(0,0,0,0.25);
+  background-color: var(--nt-surface);
+  box-shadow: var(--nt-shadow-header);
 }
-html.theme-light .clay-toolbar {
-  background-color: #eaeef4;
-  box-shadow:
-     3px  3px  8px rgba(155,165,180,0.50),
-    -2px -2px  6px rgba(255,255,255,0.92),
-    inset  1px  1px 1px rgba(255,255,255,0.95),
-    inset -1px -1px 1px rgba(155,165,180,0.35);
+html.dark .clay-toolbar {
+  background-color: var(--nt-bg-2);
+  box-shadow: var(--nt-shadow-header);
 }
 
-/* ── Toolbar button — active/pressed state ────────────────────────────────── */
-/* Overrides the flush-transparent default; simulates pressing into the pill.  */
+/* ── clay-btn-active — tool button pressed state ────────────────────────────── */
 .clay-btn-active {
-  background-color: #1c2535;          /* same as pill = seamless blend */
-  box-shadow:
-    inset  2px  2px 5px rgba(0,0,0,0.38),
-    inset -2px -2px 5px rgba(255,255,255,0.04);
+  background-color: var(--nt-bg-2);
+  box-shadow: var(--nt-shadow-in);
 }
-html.theme-light .clay-btn-active {
-  background-color: #eaeef4;
-  box-shadow:
-    inset  2px  2px 5px rgba(155,165,180,0.48),
-    inset -2px -2px 5px rgba(255,255,255,0.90);
+html.dark .clay-btn-active {
+  background-color: var(--nt-bg);
+  box-shadow: var(--nt-shadow-in);
 }
 
-/* ── Liquid Glass Button (10.5) ───────────────────────────────────────────── */
-.btn-liquid {
-  position: relative; overflow: hidden;
-  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(0,200,255,0.05) 50%, rgba(180,0,255,0.05) 100%);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.14);
+/* ── nt-btn-primary — raised primary action button ─────────────────────────── */
+.nt-btn-primary {
+  background-color: var(--nt-primary);
+  color: #fff;
+  border: none;
   border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.15);
-  transition: all 0.2s ease;
+  box-shadow:
+    3px 3px 8px rgba(0,0,0,0.30),
+   -1px -1px 4px rgba(255,255,255,0.12),
+    inset  1px  1px 2px rgba(255,255,255,0.15),
+    inset -1px -1px 2px rgba(0,0,0,0.20);
+  transition: box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
   cursor: pointer;
-  color: rgba(240,242,245,0.9);
 }
-.btn-liquid:hover {
-  border-color: rgba(0,243,255,0.4);
-  box-shadow: 0 0 16px rgba(0,243,255,0.25), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.18);
+.nt-btn-primary:hover {
+  background-color: var(--nt-primary-lt);
+  box-shadow:
+    4px 4px 10px rgba(0,0,0,0.32),
+   -2px -2px  6px rgba(255,255,255,0.14),
+    inset  1px  1px 2px rgba(255,255,255,0.18),
+    inset -1px -1px 2px rgba(0,0,0,0.22);
   transform: translateY(-1px);
 }
-.btn-liquid:active { transform: translateY(0); }
-
-/* Shimmer sweep */
-.btn-liquid::before {
-  content: '';
-  position: absolute; top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
-  transition: left 0.5s ease;
+.nt-btn-primary:active {
+  box-shadow: var(--nt-shadow-in);
+  transform: translateY(0);
 }
-.btn-liquid:hover::before { left: 150%; }
+.nt-btn-primary:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
 
-/* ── Neon Lamp Node — SVG Lightbulb (10.14, 10.46) ───────────────────────── */
-/* .lamp-node is now a bare container; all visual state lives in the SVG.      */
-/* --mastery (0–1) is set inline; SVG drop-shadow is computed in JSX.          */
+/* ── nt-btn-secondary — outlined/subtle secondary button ───────────────────── */
+.nt-btn-secondary {
+  background-color: var(--nt-surface);
+  color: var(--nt-text-2);
+  border-radius: 50px;
+  box-shadow: var(--nt-shadow-out-sm);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  cursor: pointer;
+}
+.nt-btn-secondary:hover {
+  transform: translateY(-1px);
+}
+.nt-btn-secondary:active {
+  box-shadow: var(--nt-shadow-in);
+  transform: translateY(0);
+}
+.nt-btn-secondary:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* ── nt-btn-coral — coral accent action ────────────────────────────────────── */
+.nt-btn-coral {
+  background-color: var(--nt-coral);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  box-shadow:
+    3px 3px 8px rgba(0,0,0,0.28),
+   -1px -1px 4px rgba(255,255,255,0.12),
+    inset  1px  1px 2px rgba(255,255,255,0.18),
+    inset -1px -1px 2px rgba(0,0,0,0.18);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  cursor: pointer;
+}
+.nt-btn-coral:hover {
+  background-color: var(--nt-coral-lt);
+  transform: translateY(-1px);
+}
+.nt-btn-coral:active {
+  box-shadow: inset 3px 3px 7px rgba(0,0,0,0.30), inset -2px -2px 5px rgba(255,255,255,0.10);
+  transform: translateY(0);
+}
+.nt-btn-coral:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* ── Legacy btn-liquid alias — maps to nt-btn-secondary ────────────────────── */
+.btn-liquid {
+  position: relative; overflow: hidden;
+  background-color: var(--nt-surface);
+  color: var(--nt-text-2);
+  border-radius: 50px;
+  box-shadow: var(--nt-shadow-out-sm);
+  border: 1px solid var(--nt-border);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+.btn-liquid:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    4px 4px 10px rgba(160, 140, 110, 0.42),
+   -3px -3px  7px rgba(255, 255, 255, 0.82),
+    inset  1px  1px 2px rgba(255, 255, 255, 0.88),
+    inset -1px -1px 2px rgba(160, 140, 110, 0.28);
+}
+.btn-liquid:active {
+  box-shadow: var(--nt-shadow-in);
+  transform: translateY(0);
+}
+html.dark .btn-liquid {
+  background-color: var(--nt-bg-2);
+  color: var(--nt-text-2);
+  border-color: var(--nt-border);
+}
+
+/* ── glass levels — used by modals (warm organic glass) ────────────────────── */
+.glass-1 {
+  background: rgba(245, 234, 216, 0.45);
+  border: 1px solid rgba(53, 78, 71, 0.10);
+}
+.glass-2 {
+  background: rgba(250, 242, 227, 0.80);
+  border: 1px solid rgba(53, 78, 71, 0.12);
+  box-shadow: 0 8px 24px rgba(100, 80, 50, 0.12), inset 0 1px 0 rgba(255,255,255,0.70);
+}
+.glass-3 {
+  background: rgba(250, 242, 227, 0.97);
+  border: 1px solid rgba(53, 78, 71, 0.14);
+  box-shadow: 0 16px 48px rgba(100, 80, 50, 0.18), inset 0 1px 0 rgba(255,255,255,0.80);
+}
+html.dark .glass-1 {
+  background: rgba(18, 84, 79, 0.30);
+  border-color: rgba(139, 187, 146, 0.12);
+}
+html.dark .glass-2 {
+  background: rgba(9, 35, 40, 0.88);
+  border-color: rgba(139, 187, 146, 0.16);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.40), inset 0 1px 0 rgba(139, 187, 146, 0.08);
+}
+html.dark .glass-3 {
+  background: rgba(13, 46, 52, 0.97);
+  border-color: rgba(139, 187, 146, 0.18);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(139, 187, 146, 0.10);
+}
+
+/* ── nt-modal-backdrop ─────────────────────────────────────────────────────── */
+.nt-modal-backdrop {
+  background: rgba(44, 62, 56, 0.50);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+html.dark .nt-modal-backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ── new-tree-card (dashboard + card) ──────────────────────────────────────── */
+.new-tree-card {
+  background-color: var(--nt-surface);
+  box-shadow: var(--nt-shadow-out);
+  transition: box-shadow 0.22s ease, transform 0.22s ease;
+}
+.new-tree-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    7px 7px 18px rgba(160, 140, 110, 0.48),
+   -4px -4px 12px rgba(255, 255, 255, 0.90),
+    inset  1px  1px 2px rgba(255, 255, 255, 0.90),
+    inset -1px -1px 2px rgba(160, 140, 110, 0.28);
+}
+html.dark .new-tree-card {
+  background-color: var(--nt-bg-2);
+}
+html.dark .new-tree-card:hover {
+  box-shadow:
+    5px 5px 14px rgba(0, 0, 0, 0.60),
+   -3px -3px  9px rgba(139, 187, 146, 0.08),
+    inset  1px  1px 2px rgba(139, 187, 146, 0.09),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.38);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Lamp Node — warm organic glow (replaces cyan neon)
+   ═══════════════════════════════════════════════════════════════════════════ */
 .lamp-node {
   --mastery: 0;
   position: relative;
   cursor: pointer;
-  /* Size overridden per-node inline (28×36) */
   transition: transform 0.2s ease, filter 0.3s ease;
 }
 .lamp-node:hover { transform: scale(1.18); }
 
-/* Ambient radial halo — fades with mastery, positioned by inline inset */
 .lamp-halo {
   position: absolute;
   pointer-events: none;
-  opacity: calc(var(--mastery) * 0.75);
-  background: radial-gradient(circle, rgba(0,220,240,0.35) 0%, transparent 65%);
+  opacity: calc(var(--mastery) * 0.65);
+  background: radial-gradient(circle, rgba(219, 98, 113, 0.30) 0%, transparent 65%);
   animation: glowPulse 2.8s ease-in-out infinite;
 }
-/* High-mastery nodes switch halo to warm amber */
 .lamp-mastered .lamp-halo {
-  background: radial-gradient(circle, rgba(255,210,60,0.45) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(53, 78, 71, 0.45) 0%, transparent 65%);
+}
+html.dark .lamp-halo {
+  background: radial-gradient(circle, rgba(42, 131, 95, 0.35) 0%, transparent 65%);
+  opacity: calc(var(--mastery) * 0.70);
+}
+html.dark .lamp-mastered .lamp-halo {
+  background: radial-gradient(circle, rgba(139, 187, 146, 0.45) 0%, transparent 65%);
 }
 
-/* State opacity classes — applied to the .lamp-node wrapper */
-.lamp-locked   { opacity: 0.28; filter: grayscale(0.6); }
+.lamp-locked   { opacity: 0.28; filter: grayscale(0.5); }
 .lamp-low      { opacity: 0.60; }
 .lamp-medium   { opacity: 0.78; }
 .lamp-bright   { opacity: 0.92; }
-.lamp-mastered { opacity: 1;    animation: glowPulse 2.8s ease-in-out infinite; }
+.lamp-mastered { opacity: 1; animation: glowPulse 2.8s ease-in-out infinite; }
 
-/* Light-mode lamp adjustments — reduce glow opacity on white background */
-html.theme-light .lamp-halo {
-  opacity: calc(var(--mastery) * 0.45);
-}
-html.theme-light .lamp-locked { opacity: 0.22; }
+html.dark .lamp-halo { opacity: calc(var(--mastery) * 0.55); }
+html.dark .lamp-locked { opacity: 0.22; }
 
 @keyframes glowPulse {
-  0%, 100% { filter: brightness(0.88); }
-  50%       { filter: brightness(1.35); }
+  0%, 100% { filter: brightness(0.90); }
+  50%       { filter: brightness(1.30); }
 }
 
-/* ── Node mount — spring pop-in (P4 grow animation) ──────────────────────────
-   Choreography:
-     0%   invisible + collapsed     (scale 0.5, opacity 0)
-     55%  overshoot past natural size (scale 1.12) — the "spring" moment
-     75%  slightly over-corrected smaller (scale 0.96)
-     100% settles at exact natural size (scale 1, opacity 1)
-   Duration 0.55s keeps it snappy; cubic-bezier gives the elastic feel.
-   The transform-origin is 'center bottom' so the lamp appears to grow
-   upward from the cable attachment point (bottom handle).
-──────────────────────────────────────────────────────────────────────────── */
+/* ── Lamp mount spring animation ───────────────────────────────────────────── */
 @keyframes lampPopIn {
-  0%   { opacity: 0;   transform: scale(0.50); }
-  55%  { opacity: 1;   transform: scale(1.12); }
-  75%  {               transform: scale(0.96); }
-  100% {               transform: scale(1.00); }
+  0%   { opacity: 0; transform: scale(0.50); }
+  55%  { opacity: 1; transform: scale(1.12); }
+  75%  {             transform: scale(0.96); }
+  100% {             transform: scale(1.00); }
 }
-
 .lamp-mount {
   animation: lampPopIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: center bottom;
 }
 
-/* ── Cable draw — stroke-dashoffset sweep (P4 grow animation) ─────────────
-   Works by setting dasharray = a length longer than any cable path will be,
-   then animating dashoffset from that same value down to 0.
-   The result: the stroke appears to "draw itself" from source to target.
-   We use a large fixed value (1200) — React Flow paths are never that long
-   at normal zoom, so the gap portion always hides the "second dash".
-──────────────────────────────────────────────────────────────────────────── */
+/* ── Cable draw animation ──────────────────────────────────────────────────── */
 @keyframes cableDraw {
   from { stroke-dashoffset: 1200; }
   to   { stroke-dashoffset: 0;    }
 }
-
 .cable-draw {
   stroke-dasharray:  1200;
   stroke-dashoffset: 1200;
   animation: cableDraw 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Energy particle — moves a bright dash along the cable continuously */
+/* ── Energy particle along cable ───────────────────────────────────────────── */
 @keyframes energyParticle {
   0%   { stroke-dashoffset:  100; }
   100% { stroke-dashoffset: -100; }
 }
 
-/* Grow-tool loading ring — expands from the bulb and fades out repeatedly */
+/* ── Grow-tool loading ring ─────────────────────────────────────────────────── */
 @keyframes growPulse {
-  0%   { transform: scale(0.8);  opacity: 0.9; box-shadow: 0 0 0   0px rgba(0,255,163,0.6); }
-  70%  { transform: scale(1.6);  opacity: 0.3; box-shadow: 0 0 12px 4px rgba(0,255,163,0.3); }
-  100% { transform: scale(1.8);  opacity: 0;   box-shadow: 0 0 18px 6px rgba(0,255,163,0);   }
+  0%   { transform: scale(0.8); opacity: 0.9; }
+  70%  { transform: scale(1.6); opacity: 0.3; }
+  100% { transform: scale(1.8); opacity: 0;   }
 }
-
 .lamp-grow-pulse {
-  border: 1.5px solid rgba(0,255,163,0.75);
+  border: 1.5px solid rgba(53, 78, 71, 0.60);
   animation: growPulse 1s ease-out infinite;
 }
-
-/* ── Dashboard — New Tree Card (Liquid Glass) ─────────────────────────────── */
-.new-tree-card {
-  background:           rgba(255,255,255,0.07);
-  backdrop-filter:      blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border:               1px solid rgba(255,255,255,0.13);
-  box-shadow:           inset 0 1px 1px rgba(255,255,255,0.12);
-  transition:           background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
-}
-.new-tree-card:hover {
-  background:   rgba(255,255,255,0.13);
-  border-color: rgba(0,210,230,0.35);
-  box-shadow:   inset 0 1px 1px rgba(255,255,255,0.20), 0 6px 28px rgba(0,220,255,0.14);
-  transform:    translateY(-3px);
-}
-/* Light mode — slightly more opaque white glass */
-html.theme-light .new-tree-card {
-  background:   rgba(255,255,255,0.55);
-  border-color: rgba(0,0,0,0.09);
-  box-shadow:   inset 0 1px 0 rgba(255,255,255,0.90), 0 2px 12px rgba(0,0,0,0.06);
-}
-html.theme-light .new-tree-card:hover {
-  background:   rgba(255,255,255,0.72);
-  border-color: rgba(0,160,200,0.30);
-  box-shadow:   inset 0 1px 0 rgba(255,255,255,1), 0 6px 20px rgba(0,160,200,0.12);
+html.dark .lamp-grow-pulse {
+  border-color: rgba(139, 187, 146, 0.65);
 }
 
-/* ── Energy Edge ───────────────────────────────────────────────────────────── */
+/* ── Edge styles ────────────────────────────────────────────────────────────── */
 .energy-edge-path {
-  stroke: var(--accent-cyan);
+  stroke: var(--nt-primary-lt);
   stroke-width: 2;
   fill: none;
-  filter: drop-shadow(0 0 3px rgba(0,243,255,0.5));
+  filter: drop-shadow(0 0 2px rgba(53, 78, 71, 0.35));
 }
 .energy-edge-locked {
-  stroke: rgba(255,255,255,0.12);
+  stroke: rgba(53, 78, 71, 0.18);
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 4 4;
   filter: none;
 }
-.energy-particle {
-  animation: particleFlow 1.8s linear infinite;
+html.dark .energy-edge-path {
+  stroke: var(--nt-primary-lt);
+  filter: drop-shadow(0 0 2px rgba(139, 187, 146, 0.40));
 }
-@keyframes particleFlow {
-  0%   { stroke-dashoffset: 100; }
-  100% { stroke-dashoffset: 0; }
+html.dark .energy-edge-locked {
+  stroke: rgba(139, 187, 146, 0.14);
 }
 
-/* ── Glowing Card (Aceternity-style) ──────────────────────────────────────── */
+/* ── Glowing card (used by GlowingNodeCard) ─────────────────────────────────── */
 .glowing-card {
   position: relative;
 }
@@ -408,18 +559,19 @@ html.theme-light .new-tree-card:hover {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
+  pointer-events: none;
   background: conic-gradient(
     from var(--angle, 0deg),
     transparent 20%,
-    var(--accent-cyan) 40%,
-    var(--accent-purple) 60%,
+    var(--nt-primary-lt) 40%,
+    var(--nt-coral)      60%,
     transparent 80%
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: borderRotate 3s linear infinite;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 @property --angle {
   syntax: '<angle>';
@@ -430,186 +582,999 @@ html.theme-light .new-tree-card:hover {
   to { --angle: 360deg; }
 }
 
-/* ── Encrypted Text ────────────────────────────────────────────────────────── */
-.encrypted-char {
-  display: inline-block;
-  transition: opacity 0.05s;
-  font-family: 'Share Tech Mono', monospace;
+/* ── GlassCard panel ─────────────────────────────────────────────────────────── */
+.glass-card-panel {
+  background: rgba(250, 242, 227, 0.55);
+  border-top-color:    rgba(255, 255, 255, 0.85);
+  border-left-color:   rgba(255, 255, 255, 0.70);
+  border-right-color:  rgba(53, 78, 71, 0.08);
+  border-bottom-color: rgba(53, 78, 71, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80), 0 2px 10px rgba(100,80,50,0.08);
 }
+html.dark .glass-card-panel {
+  background: rgba(18, 84, 79, 0.30);
+  border-color: rgba(139, 187, 146, 0.14);
+  box-shadow: inset 0 1px 0 rgba(139, 187, 146, 0.08), 0 2px 10px rgba(0,0,0,0.20);
+}
+.glass-card-backglow { opacity: 0.30; }
+html.dark .glass-card-backglow { opacity: 0.25; }
+.glass-card-wrapper:hover .glass-card-backglow { opacity: 0.55; }
+html.dark .glass-card-wrapper:hover .glass-card-backglow { opacity: 0.45; }
 
-/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,243,255,0.3); }
-
-/* ── React Flow overrides ──────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   React Flow overrides
+   ═══════════════════════════════════════════════════════════════════════════ */
 .react-flow__renderer,
 .react-flow__background { background: transparent !important; }
+
+.react-flow__background pattern { stroke: var(--nt-border) !important; }
+
 .react-flow__handle {
   width: 8px !important; height: 8px !important;
   border-radius: 50% !important;
-  border: 2px solid var(--accent-cyan) !important;
-  background: #111315 !important;
+  border: 2px solid var(--nt-primary-lt) !important;
+  background: var(--nt-bg) !important;
 }
-.react-flow__handle:hover { background: var(--accent-cyan) !important; }
+.react-flow__handle:hover { background: var(--nt-primary-lt) !important; }
+
 .react-flow__controls {
-  background: rgba(17,19,21,0.8) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
+  background: var(--nt-surface) !important;
+  border: 1px solid var(--nt-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--nt-shadow-out-sm) !important;
 }
 .react-flow__controls-button {
   background: transparent !important;
-  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-  color: rgba(0,243,255,0.7) !important;
-  fill: rgba(0,243,255,0.7) !important;
+  border-bottom: 1px solid var(--nt-border) !important;
+  color: var(--nt-primary) !important;
+  fill: var(--nt-primary) !important;
 }
 .react-flow__controls-button:hover {
-  background: rgba(0,243,255,0.08) !important;
+  background: rgba(53, 78, 71, 0.07) !important;
 }
+html.dark .react-flow__controls {
+  background: var(--nt-bg-2) !important;
+}
+html.dark .react-flow__controls-button {
+  color: var(--nt-primary-lt) !important;
+  fill: var(--nt-primary-lt) !important;
+}
+html.dark .react-flow__controls-button:hover {
+  background: rgba(139, 187, 146, 0.08) !important;
+}
+
 .react-flow__minimap {
-  background: rgba(17,19,21,0.85) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  background: var(--nt-surface) !important;
+  border: 1px solid var(--nt-border) !important;
   border-radius: 8px !important;
 }
-
-/* ── Light Mode Overrides (P3 — spec 10.61) ───────────────────────────────── */
-/* html.theme-light is added/removed by useCanvasTools (applyThemeClass).     */
-/* Tailwind dark: variants are driven by html.dark (also toggled there).      */
-/* Only surface/color values change — layout, interactions, and learning data */
-/* are fully preserved (spec 10.61 requirement).                              */
-
-html.theme-light {
-  --bg-primary:    #F0F2F5;
-  --bg-secondary:  #E8EAED;
-  --bg-elevated:   #FFFFFF;
-  --text-primary:  #1A1D21;
-  --text-muted:    rgba(26,29,33,0.55);
-  --border-subtle: rgba(0,0,0,0.07);
-  --border-glass:  rgba(0,0,0,0.10);
-
-  /* Node label — light mode */
-  --text-node-label:  rgba(30,35,42,0.75);
-  --text-node-locked: rgba(0,0,0,0.25);
-  /* Toolbar icon hover — light mode */
-  --toolbar-icon-hover: rgba(30,35,42,0.90);
+html.dark .react-flow__minimap {
+  background: var(--nt-bg-2) !important;
 }
 
-html.theme-light,
-html.theme-light body,
-html.theme-light #root {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+/* ═══════════════════════════════════════════════════════════════════════════
+   Scrollbar
+   ═══════════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(53, 78, 71, 0.18);
+  border-radius: 4px;
 }
+::-webkit-scrollbar-thumb:hover { background: rgba(53, 78, 71, 0.35); }
+html.dark ::-webkit-scrollbar-thumb { background: rgba(139, 187, 146, 0.18); }
+html.dark ::-webkit-scrollbar-thumb:hover { background: rgba(139, 187, 146, 0.35); }
 
-/* Background — warm light gray with soft ambient radials */
-html.theme-light .bg-app {
-  background-color: #F0F2F5;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(77,124,254,0.06) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 0% 0%,   rgba(0,200,255,0.03)  0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 100% 20%, rgba(150,0,200,0.03)  0%, transparent 60%);
-}
-
-/* Glass Level 1 */
-html.theme-light .glass-1 {
-  background: rgba(255,255,255,0.55);
-  border-color: rgba(0,0,0,0.08);
-}
-
-/* Glass Level 2 */
-html.theme-light .glass-2 {
-  background: rgba(255,255,255,0.75);
-  border-color: rgba(0,0,0,0.10);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.90);
-}
-
-/* Glass Level 3 (modals, quiz) */
-html.theme-light .glass-3 {
-  background: rgba(248,249,252,0.97);
-  border-color: rgba(0,0,0,0.10);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,1);
-}
-
-/* Liquid button */
-html.theme-light .btn-liquid {
-  background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(220,240,255,0.7) 50%, rgba(230,200,255,0.5) 100%);
-  border-color: rgba(0,0,0,0.12);
-  color: rgba(26,29,33,0.85);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.06);
-}
-html.theme-light .btn-liquid:hover {
-  border-color: rgba(0,180,220,0.5);
-  box-shadow: 0 0 14px rgba(0,180,220,0.18), 0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,1);
-}
-
-/* Scrollbar */
-html.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
-html.theme-light ::-webkit-scrollbar-thumb:hover { background: rgba(0,150,200,0.35); }
-
-/* Neon lamp — reduce glow intensity, keep it legible on white */
-html.theme-light .lamp-halo {
-  opacity: calc(var(--mastery) * 0.5);
-}
-html.theme-light .lamp-core {
-  box-shadow:
-    0 0 calc(4px  + var(--mastery)*12px) rgba(0,160,200,calc(0.25 + var(--mastery)*0.35)),
-    0 0 calc(8px  + var(--mastery)*24px) rgba(0,160,200,calc(0.08 + var(--mastery)*0.12));
-  border-color: rgba(0,160,200,calc(0.25 + var(--mastery)*0.5));
-}
-
-/* React Flow handle — light mode */
-html.theme-light .react-flow__handle {
-  border-color: rgba(0,150,200,0.7) !important;
-  background: #F0F2F5 !important;
-}
-html.theme-light .react-flow__handle:hover {
-  background: rgba(0,150,200,0.8) !important;
-}
-
-/* React Flow controls — light mode */
-html.theme-light .react-flow__controls {
-  background: rgba(255,255,255,0.90) !important;
-  border-color: rgba(0,0,0,0.10) !important;
-}
-html.theme-light .react-flow__controls-button {
-  color: rgba(0,100,160,0.8) !important;
-  fill: rgba(0,100,160,0.8) !important;
-  border-bottom-color: rgba(0,0,0,0.06) !important;
-}
-html.theme-light .react-flow__controls-button:hover {
-  background: rgba(0,140,190,0.08) !important;
-}
-
-/* ── GlassCard — light mode: more opaque glass, softer backglow ───────────── */
-/* The Layer 3 glass panel uses inline styles (rgba(255,255,255,0.05)) which   */
-/* is invisible on a light background. We patch the selector here.             */
-html.theme-light .glass-card-panel {
-  background:           rgba(255,255,255,0.60) !important;
-  border-top-color:     rgba(255,255,255,0.95) !important;
-  border-left-color:    rgba(255,255,255,0.80) !important;
-  border-right-color:   rgba(0,0,0,0.06) !important;
-  border-bottom-color:  rgba(0,0,0,0.06) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(0,0,0,0.05),
-              0 2px 10px rgba(0,0,0,0.05) !important;
-}
-/* Backglow is too strong on white — reduce it */
-html.theme-light .glass-card-backglow {
-  opacity: 0.25 !important;
-}
-html.theme-light .glass-card-wrapper:hover .glass-card-backglow {
-  opacity: 0.45 !important;
-}
-
-/* Card entrance animation (used by NoteModal, RouterModal) */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Shared keyframes used across components
+   ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(10px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0)    scale(1);    }
 }
 
-/* glowPulse used by RouterModal loading state + lamp-mastered */
-@keyframes glowPulse {
-  0%, 100% { filter: brightness(0.9); }
-  50%       { filter: brightness(1.4); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes sidebarIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0);     }
+}
+
+/* ── EncryptedText char animation (landing page retained) ──────────────────── */
+.encrypted-char {
+  display: inline-block;
+  transition: opacity 0.05s;
+  font-family: var(--font-primary);
+}
+
+/* ── Organic decorative pulse ring (SkillTree loading) ─────────────────────── */
+@keyframes organicPulse {
+  0%   { opacity: 0.8; transform: scale(1);    }
+  50%  { opacity: 0.4; transform: scale(1.15); }
+  100% { opacity: 0.8; transform: scale(1);    }
+}
+.organic-pulse { animation: organicPulse 2s ease-in-out infinite; }
+
+/* ── Textarea / input base reset within the app ─────────────────────────────── */
+.nt-input {
+  background: var(--nt-bg-2);
+  color: var(--nt-text);
+  border: 1px solid var(--nt-border-2);
+  border-radius: 12px;
+  box-shadow: var(--nt-shadow-in);
+  outline: none;
+  font-family: var(--font-primary);
+  font-weight: var(--fw-regular);
+  transition: border-color 0.18s ease;
+}
+.nt-input:focus {
+  border-color: var(--nt-primary-lt);
+}
+html.dark .nt-input {
+  background: var(--nt-bg);
+  color: var(--nt-text);
+  border-color: var(--nt-border);
+}
+html.dark .nt-input:focus {
+  border-color: var(--nt-primary-lt);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M-19 ADDITIONS — Expanded palette utilities & modal token aliases
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Panel surface (darker than surface, used in modals + cards) ────────── */
+.nt-panel {
+  background-color: var(--nt-bg-2);
+  border: 1px solid var(--nt-border);
+}
+html.dark .nt-panel {
+  background-color: var(--nt-bg-2);
+  border-color: var(--nt-border);
+}
+
+/* ── Surface card (nt-surface bg, no clay shadow) ───────────────────────── */
+.nt-card {
+  background-color: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: 16px;
+}
+html.dark .nt-card {
+  background-color: var(--nt-bg-2);
+  border-color: var(--nt-border);
+}
+
+/* ── Inset recessed area (input wells, drop zones) ───────────────────────── */
+.nt-inset {
+  background-color: var(--nt-bg-2);
+  border: 1px solid var(--nt-border-2);
+  box-shadow: var(--nt-shadow-in);
+}
+html.dark .nt-inset {
+  background-color: var(--nt-bg);
+  border-color: var(--nt-border);
+}
+
+/* ── Progress bar track ──────────────────────────────────────────────────── */
+.nt-track {
+  background-color: var(--nt-bg-3);
+  box-shadow: var(--nt-shadow-in);
+}
+html.dark .nt-track {
+  background-color: var(--nt-bg);
+}
+
+/* ── Tab bar container ────────────────────────────────────────────────────── */
+.nt-tab-bar {
+  background-color: var(--nt-bg-2);
+  border: 1px solid var(--nt-border);
+  box-shadow: var(--nt-shadow-in);
+}
+html.dark .nt-tab-bar {
+  background-color: var(--nt-bg);
+}
+
+/* ── Active tab pill ─────────────────────────────────────────────────────── */
+.nt-tab-active {
+  background-color: var(--nt-surface);
+  box-shadow: var(--nt-shadow-out-sm);
+  color: var(--nt-text);
+}
+html.dark .nt-tab-active {
+  background-color: var(--nt-bg-2);
+  color: var(--nt-text);
+}
+
+/* ── Inline notice — primary (teal) ──────────────────────────────────────── */
+.nt-notice-primary {
+  background: rgba(53, 78, 71, 0.08);
+  border: 1px solid rgba(53, 78, 71, 0.22);
+  color: var(--nt-primary);
+  border-radius: 12px;
+}
+html.dark .nt-notice-primary {
+  background: rgba(42, 131, 95, 0.12);
+  border-color: rgba(42, 131, 95, 0.30);
+  color: var(--nt-primary-lt);
+}
+
+/* ── Inline notice — coral (error/warning) ───────────────────────────────── */
+.nt-notice-coral {
+  background: rgba(219, 98, 113, 0.08);
+  border: 1px solid rgba(219, 98, 113, 0.25);
+  color: var(--nt-coral);
+  border-radius: 12px;
+}
+
+/* ── Inline notice — amber (warning / mismatch) ─────────────────────────── */
+.nt-notice-amber {
+  background: rgba(180, 130, 0, 0.08);
+  border: 1px solid rgba(180, 130, 0, 0.28);
+  color: rgba(130, 90, 0, 0.90);
+  border-radius: 12px;
+}
+html.dark .nt-notice-amber {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.22);
+  color: rgba(251, 191, 36, 0.82);
+}
+
+/* ── Inline notice — gray (info, unknown) ────────────────────────────────── */
+.nt-notice-gray {
+  background: rgba(107, 124, 118, 0.08);
+  border: 1px solid var(--nt-border-2);
+  color: var(--nt-text-3);
+  border-radius: 12px;
+}
+
+/* ── Pill chip (tag/filter) ──────────────────────────────────────────────── */
+.nt-chip {
+  background: rgba(53, 78, 71, 0.08);
+  border: 1px solid rgba(53, 78, 71, 0.18);
+  color: var(--nt-primary-lt);
+  border-radius: 50px;
+  font-size: 11px;
+  padding: 2px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.nt-chip:hover {
+  background: rgba(53, 78, 71, 0.14);
+  transform: translateY(-1px);
+}
+html.dark .nt-chip {
+  background: rgba(42, 131, 95, 0.12);
+  border-color: rgba(139, 187, 146, 0.22);
+  color: var(--nt-primary-lt);
+}
+html.dark .nt-chip:hover {
+  background: rgba(42, 131, 95, 0.20);
+}
+
+/* ── Coral chip ──────────────────────────────────────────────────────────── */
+.nt-chip-coral {
+  background: rgba(219, 98, 113, 0.08);
+  border: 1px solid rgba(219, 98, 113, 0.22);
+  color: var(--nt-coral);
+  border-radius: 50px;
+  font-size: 11px;
+  padding: 2px 10px;
+}
+
+/* ── Score badge (quiz result) ───────────────────────────────────────────── */
+.nt-score-mastered {
+  color: var(--nt-primary);
+}
+html.dark .nt-score-mastered {
+  color: var(--nt-primary-lt);
+}
+.nt-score-review {
+  color: var(--nt-coral);
+}
+
+/* ── Modal header (sticky, clay surface) ─────────────────────────────────── */
+.nt-modal-header {
+  background-color: var(--nt-surface);
+  border-bottom: 1px solid var(--nt-border);
+}
+html.dark .nt-modal-header {
+  background-color: var(--nt-bg-2);
+  border-color: var(--nt-border);
+}
+
+/* ── Modal body bg ──────────────────────────────────────────────────────── */
+.nt-modal-body {
+  background-color: var(--nt-bg);
+}
+html.dark .nt-modal-body {
+  background-color: var(--nt-bg);
+}
+
+/* ── Master Light golden tones (not theme-swapped — stays gold) ──────────── */
+.nt-gold { color: #d4a017; }
+.nt-gold-lt { color: #e8c547; }
+.nt-bg-gold { background: rgba(212, 160, 23, 0.10); border: 1px solid rgba(212, 160, 23, 0.28); }
+
+/* ── Page section label ─────────────────────────────────────────────────── */
+.nt-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nt-text-3);
+}
+
+/* ── Divider ────────────────────────────────────────────────────────────── */
+.nt-divider {
+  height: 1px;
+  background: var(--nt-border);
+}
+
+/* ── Known card (flashcard known state) ─────────────────────────────────── */
+.nt-fc-known {
+  background: rgba(53, 78, 71, 0.08);
+  border: 1px solid rgba(53, 78, 71, 0.22);
+  color: var(--nt-primary);
+}
+html.dark .nt-fc-known {
+  background: rgba(42, 131, 95, 0.12);
+  border-color: rgba(139, 187, 146, 0.28);
+  color: var(--nt-primary-lt);
+}
+
+/* ── Review card (flashcard review state) ────────────────────────────────── */
+.nt-fc-review {
+  background: rgba(219, 98, 113, 0.08);
+  border: 1px solid rgba(219, 98, 113, 0.22);
+  color: var(--nt-coral);
+}
+
+/* ── Dot nav (active/known/review/pending) ──────────────────────────────── */
+.nt-dot-active  { background: var(--nt-primary-lt); }
+.nt-dot-known   { background: var(--nt-primary); }
+.nt-dot-review  { background: var(--nt-coral-lt); }
+.nt-dot-pending { background: var(--nt-border-2); }
+html.dark .nt-dot-active  { background: var(--nt-primary-lt); }
+html.dark .nt-dot-known   { background: var(--nt-primary-lt); }
+
+/* ── Pulse spinner for loading states ───────────────────────────────────── */
+@keyframes ntSpin {
+  to { transform: rotate(360deg); }
+}
+.nt-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--nt-border-2);
+  border-top-color: var(--nt-primary-lt);
+  border-radius: 50%;
+  animation: ntSpin 0.8s linear infinite;
+}
+html.dark .nt-spinner {
+  border-color: rgba(139, 187, 146, 0.18);
+  border-top-color: var(--nt-primary-lt);
+}
+
+
+/* ── BackgroundRippleEffect — Aceternity cell-ripple grid ───────────────────── */
+/* Animates background-color only — border is unaffected, always visible.     */
+/* --nt-ripple-lo / --nt-ripple-hi are set per theme below.                   */
+:root {
+  --nt-ripple-lo: rgba(53, 78, 71, 0.06);
+  --nt-ripple-hi: rgba(53, 78, 71, 0.18);
+}
+html.dark {
+  --nt-ripple-lo: rgba(42, 131, 95, 0.08);
+  --nt-ripple-hi: rgba(42, 131, 95, 0.22);
+}
+@keyframes cell-ripple-fill {
+  0%   { background-color: var(--nt-ripple-lo); }
+  50%  { background-color: var(--nt-ripple-hi); }
+  100% { background-color: transparent; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IntroPage — M-19c product introduction styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.intro-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--nt-bg);
+  border-bottom: 1px solid var(--nt-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: background 0.3s, border-color 0.3s;
+}
+html.dark .intro-header {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+}
+.intro-header-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.intro-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--nt-border-2);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-family: var(--font-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--nt-text-3);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.intro-back-btn:hover {
+  color: var(--nt-primary);
+  border-color: var(--nt-primary);
+  background: rgba(53,78,71,0.06);
+  transform: translateX(-2px);
+}
+html.dark .intro-back-btn:hover { background: rgba(42,131,95,0.10); }
+.intro-back-btn:focus-visible {
+  outline: 2px solid var(--nt-primary);
+  outline-offset: 3px;
+}
+
+.intro-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--nt-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  padding: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.intro-wordmark:hover { opacity: 0.78; }
+
+.intro-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex: 1;
+}
+.intro-nav-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--nt-text-3);
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+  letter-spacing: 0.02em;
+}
+.intro-nav-link:hover {
+  color: var(--nt-primary);
+  background: rgba(53,78,71,0.07);
+}
+html.dark .intro-nav-link:hover {
+  background: rgba(42,131,95,0.12);
+}
+
+.intro-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.intro-theme-toggle {
+  background: none;
+  border: 1px solid var(--nt-border-2);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--nt-text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s;
+}
+.intro-theme-toggle:hover {
+  border-color: var(--nt-primary);
+  color: var(--nt-primary);
+  transform: scale(1.1);
+}
+.intro-cta-btn {
+  font-size: 0.78rem !important;
+  padding: 7px 16px !important;
+  letter-spacing: 0.06em;
+}
+.intro-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--nt-border-2);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px 7px;
+}
+.intro-hamburger span {
+  display: block;
+  height: 1.5px;
+  width: 18px;
+  background: var(--nt-text-2);
+  border-radius: 2px;
+}
+
+.intro-mobile-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--nt-border);
+  background: var(--nt-bg);
+  gap: 2px;
+}
+.intro-mobile-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--nt-text-2);
+  padding: 10px 12px;
+  text-align: left;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+}
+.intro-mobile-link:hover { color: var(--nt-primary); background: rgba(53,78,71,0.06); }
+.intro-mobile-cta { margin-top: 8px; width: 100%; }
+
+/* ── Page wrapper ───────────────────────────────────────────────────────── */
+.intro-page {
+  font-family: var(--font-primary);
+  color: var(--nt-text);
+}
+
+/* ── Section base ───────────────────────────────────────────────────────── */
+.intro-section {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 72px 24px;
+}
+.intro-section-alt {
+  background: var(--nt-bg-2);
+  max-width: 100%;
+  padding: 72px 0;
+}
+.intro-section-alt > *,
+.intro-section-alt > .intro-two-col,
+.intro-section-alt > .intro-steps,
+.intro-section-alt > .intro-cards-grid,
+.intro-section-alt > .chunking-diagram,
+.intro-section-alt > .intro-chunking-note,
+.intro-section-alt > .intro-quote {
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.intro-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--nt-coral);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.intro-h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--nt-text);
+  line-height: 1.12;
+  margin: 0 0 20px;
+}
+.intro-h2 {
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--nt-text);
+  line-height: 1.2;
+  margin: 0 0 16px;
+}
+.intro-lead {
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: var(--nt-text-2);
+  line-height: 1.7;
+  max-width: 540px;
+  margin: 0 0 28px;
+}
+.intro-section-lead {
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--nt-text-2);
+  line-height: 1.7;
+  max-width: 640px;
+  margin: 0 auto 40px;
+  text-align: center;
+}
+.intro-body-text {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--nt-text-2);
+  line-height: 1.75;
+  margin-bottom: 16px;
+}
+.intro-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--nt-text-3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.intro-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--nt-text-3);
+  background: var(--nt-bg-2);
+  border: 1px solid var(--nt-border-2);
+  border-radius: 100px;
+  padding: 3px 10px;
+}
+
+/* ── Quote ──────────────────────────────────────────────────────────────── */
+.intro-quote {
+  border-left: 3px solid var(--nt-primary);
+  padding: 12px 0 12px 20px;
+  margin: 24px 0;
+  background: rgba(53,78,71,0.04);
+  border-radius: 0 10px 10px 0;
+}
+html.dark .intro-quote { background: rgba(42,131,95,0.08); }
+.intro-quote p {
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--nt-text);
+  line-height: 1.65;
+  margin: 0 0 8px;
+}
+.intro-quote cite {
+  font-size: 0.76rem;
+  font-weight: 300;
+  font-style: normal;
+  color: var(--nt-text-3);
+}
+.intro-quote-center {
+  border-left: none;
+  border-top: 3px solid var(--nt-primary);
+  padding: 20px 24px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 40px;
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.intro-hero {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 64px 24px 56px;
+}
+.intro-hero-text { flex: 1; min-width: 0; }
+.intro-hero-illo { flex: 0 0 340px; }
+.intro-hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.intro-hero-cta   { font-size: 0.88rem !important; padding: 11px 24px !important; }
+.intro-hero-secondary { font-size: 0.88rem !important; padding: 11px 24px !important; }
+
+/* ── Cards grid ─────────────────────────────────────────────────────────── */
+.intro-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* ── Problem cards ──────────────────────────────────────────────────────── */
+.intro-problem-card {
+  padding: 22px;
+  transition: transform 0.18s ease;
+}
+.intro-problem-card:hover { transform: translateY(-3px); }
+.intro-card-icon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 12px;
+}
+.intro-card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--nt-text);
+  margin: 0 0 8px;
+}
+.intro-card-body {
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--nt-text-2);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Steps ──────────────────────────────────────────────────────────────── */
+.intro-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.intro-step {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: 12px;
+  transition: box-shadow 0.18s;
+}
+.intro-step:hover { box-shadow: var(--nt-shadow-out-sm); }
+.intro-step-num {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--nt-coral);
+  opacity: 0.7;
+  min-width: 36px;
+  line-height: 1;
+  padding-top: 2px;
+}
+.intro-step-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--nt-text);
+  margin-bottom: 4px;
+}
+.intro-step-body {
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--nt-text-2);
+  line-height: 1.65;
+}
+.intro-step-connector {
+  width: 2px;
+  height: 12px;
+  background: var(--nt-border-2);
+  margin: 0 auto 0 29px;
+}
+
+/* ── Two-col layout ─────────────────────────────────────────────────────── */
+.intro-two-col {
+  display: flex;
+  gap: 48px;
+  align-items: center;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.intro-two-col-text { flex: 1; min-width: 0; }
+.intro-two-col-illo { flex: 0 0 340px; }
+
+/* ── Chunking diagram ───────────────────────────────────────────────────── */
+.chunking-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 auto 32px;
+  padding: 0 24px;
+}
+.chunk-step { flex: 1; min-width: 120px; max-width: 180px; padding: 14px; }
+.chunk-step-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--nt-text-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.chunk-arrow {
+  font-size: 1.6rem;
+  color: var(--nt-border-2);
+  font-weight: 300;
+  flex-shrink: 0;
+}
+.intro-chunking-note {
+  padding: 16px 20px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--nt-text-2);
+  line-height: 1.65;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* ── Pathway cards ──────────────────────────────────────────────────────── */
+.intro-pathway-card {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.18s;
+}
+.intro-pathway-card:hover { transform: translateY(-3px); }
+.pathway-icon { font-size: 1.6rem; }
+.pathway-from, .pathway-to { display: flex; flex-direction: column; gap: 2px; }
+.pathway-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--nt-text-3);
+}
+.pathway-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+.pathway-career { color: var(--nt-primary); }
+html.dark .pathway-career { color: var(--nt-primary-lt); }
+.pathway-arrow {
+  font-size: 1.2rem;
+  color: var(--nt-border-2);
+  padding-left: 2px;
+}
+.pathway-note {
+  font-size: 0.68rem;
+  font-weight: 300;
+  color: var(--nt-text-3);
+  font-style: italic;
+}
+.intro-career-disclaimer {
+  padding: 16px 20px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--nt-text-2);
+  line-height: 1.65;
+  margin-top: 24px;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Final CTA section ──────────────────────────────────────────────────── */
+.intro-final-cta {
+  padding: 80px 24px;
+}
+.intro-final-btn {
+  font-size: 1rem !important;
+  padding: 14px 36px !important;
+  letter-spacing: 0.08em;
+}
+.intro-footer-hint {
+  margin-top: 20px;
+  font-size: 0.72rem;
+  font-weight: 300;
+  color: var(--nt-text-3);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+.intro-footer {
+  border-top: 1px solid var(--nt-border);
+  padding: 24px;
+  background: var(--nt-bg-2);
+}
+.intro-footer-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.intro-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--nt-primary);
+}
+.intro-footer-meta {
+  font-size: 0.72rem;
+  font-weight: 300;
+  color: var(--nt-text-3);
+}
+
+/* ── Focus states ───────────────────────────────────────────────────────── */
+.intro-nav-link:focus-visible,
+.intro-mobile-link:focus-visible,
+.intro-theme-toggle:focus-visible,
+.intro-cta-btn:focus-visible,
+.intro-wordmark:focus-visible {
+  outline: 2px solid var(--nt-primary);
+  outline-offset: 3px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .intro-nav      { display: none; }
+  .intro-cta-btn  { display: none; }
+  .intro-hamburger { display: flex; }
+
+  .intro-hero {
+    flex-direction: column;
+    gap: 32px;
+    padding: 40px 20px 36px;
+    text-align: center;
+  }
+  .intro-hero-illo { flex: none; width: 100%; max-width: 300px; margin: 0 auto; }
+  .intro-lead { max-width: 100%; }
+  .intro-hero-actions { justify-content: center; }
+
+  .intro-two-col {
+    flex-direction: column;
+    gap: 32px;
+  }
+  .intro-two-col-illo { flex: none; width: 100%; }
+
+  .intro-section  { padding: 48px 20px; }
+  .intro-section-alt { padding: 48px 0; }
+
+  .chunk-arrow { display: none; }
+  .chunking-diagram { flex-direction: column; align-items: center; }
+  .chunk-step { max-width: 100%; width: 100%; }
+
+  .intro-h2 { text-align: center; }
+  .intro-section-label { text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-problem-card,
+  .intro-pathway-card,
+  .intro-step { transition: none !important; }
 }
