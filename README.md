@@ -347,3 +347,197 @@ Dengan arsitektur ini, NeuroTree memiliki pemisahan yang jelas antara:
 sehingga sistem lebih mudah dikembangkan, diuji, dan diperluas.
 
 Learning should reveal the path forward.
+
+## 🛠️ Running NeuroTree from Source Code
+
+Bagian ini menjelaskan cara menjalankan NeuroTree secara lokal menggunakan source code repository.
+
+### Prerequisites
+
+Pastikan sudah memiliki:
+
+- Python 3.11+
+- Node.js 18+
+- Package manager (npm/pnpm)
+- Git
+- IBM Langflow instance (local atau deployed)
+
+---
+
+## 1. Clone Repository
+
+```bash
+git clone https://github.com/SECTAAN/NeuroTree.git
+cd NeuroTree
+```
+
+---
+
+## 2. Backend Setup (FastAPI)
+
+Masuk ke folder backend:
+
+```bash
+cd backend
+```
+
+Buat virtual environment:
+
+```bash
+python -m venv venv
+```
+
+Aktifkan environment:
+
+**Windows**
+```bash
+venv\Scripts\activate
+```
+
+**Linux/Mac**
+```bash
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Buat file environment:
+
+```bash
+cp .env.example .env
+```
+
+Sesuaikan konfigurasi:
+
+```env
+DATABASE_URL=sqlite:///./neurotree.db
+
+USE_MOCK_AI=False
+
+LANGFLOW_BASE_URL=http://localhost:7860
+LANGFLOW_API_KEY=your-langflow-api-key
+
+LANGFLOW_FLOW_NT01=your-flow-id
+LANGFLOW_FLOW_NT02=your-flow-id
+LANGFLOW_FLOW_NT03=your-flow-id
+LANGFLOW_FLOW_NT04=your-flow-id
+LANGFLOW_FLOW_NT05=your-flow-id
+
+ALLOWED_ORIGINS=["http://localhost:5173"]
+```
+
+Jalankan backend:
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Backend akan berjalan di:
+
+```
+http://localhost:8000
+```
+
+API documentation:
+
+```
+http://localhost:8000/docs
+```
+
+---
+
+## 3. Frontend Setup (React + Vite)
+
+Buka terminal baru:
+
+```bash
+cd frontend
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Buat file environment:
+
+```bash
+cp .env.example .env
+```
+
+Isi API backend:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+Jalankan frontend:
+
+```bash
+npm run dev
+```
+
+Frontend akan berjalan di:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 4. Menjalankan IBM Langflow
+
+NeuroTree membutuhkan Langflow untuk menjalankan workflow AI.
+
+Jalankan Langflow:
+
+```bash
+langflow run
+```
+
+atau gunakan deployment Langflow yang sudah tersedia.
+
+Pastikan flow berikut aktif:
+
+- NT-01 — Knowledge Tree Generation
+- NT-02 — Adaptive Quiz Generation
+- NT-03 — Quiz Evaluation
+- NT-04 — Mastery Analysis
+- NT-05 — Career Pathway Recommendation
+
+---
+
+## 5. Menggunakan Aplikasi
+
+Setelah semua service aktif:
+
+1. Buka frontend NeuroTree.
+2. Upload materi pembelajaran (PDF/DOCX/gambar kamera).
+3. Sistem akan memproses materi melalui Langflow.
+4. Knowledge tree akan dibuat secara otomatis.
+5. Pengguna dapat mempelajari konsep, mengerjakan quiz, melihat mastery level, dan mendapatkan career pathway recommendation.
+
+---
+
+## Architecture Overview
+
+```
+User
+ ↓
+React Frontend
+ ↓
+FastAPI Backend
+ ↓
+IBM Langflow AI Workflow
+ ↓
+Database
+ ↓
+Learning Insights
+```
+
+IBM Langflow menangani proses AI reasoning, sedangkan backend NeuroTree mengatur API, data pengguna, dan integrasi aplikasi.
