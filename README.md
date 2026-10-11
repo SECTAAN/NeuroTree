@@ -2,7 +2,11 @@
 
 ### AI Adaptive Learning Platform — Transforming Documents into Interactive Knowledge Trees
 
+🚀 **Live Demo:** https://neuro-tree.vercel.app/
+
 NeuroTree adalah platform pembelajaran adaptif berbasis AI yang mengubah dokumen statis menjadi **knowledge graph interaktif**, membantu pengguna memahami materi secara bertahap melalui eksplorasi konsep, evaluasi pemahaman, dan rekomendasi jalur belajar.
+
+Dengan NeuroTree, pengguna dapat mengunggah materi pembelajaran, mengeksplorasi hubungan antar konsep, mengukur pemahaman melalui quiz adaptif, serta mendapatkan rekomendasi jalur belajar berdasarkan tingkat penguasaan mereka.
 
 ---
 
