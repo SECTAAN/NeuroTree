@@ -10,81 +10,173 @@ Dengan NeuroTree, pengguna dapat mengunggah materi pembelajaran, mengeksplorasi 
 
 ---
 
-## 🎯 Why NeuroTree?
+# 🎯 Why NeuroTree?
 
-### The Problem
+## The Problem
 
-Saat ini banyak proses belajar masih bergantung pada:
+Di era digital, masalah belajar bukan lagi kurangnya informasi, tetapi bagaimana mengubah informasi menjadi pemahaman yang bertahan lama.
 
-- Dokumen panjang yang sulit dipahami
-- Materi yang sama untuk semua pengguna tanpa melihat kemampuan individu
-- Evaluasi yang hanya mengukur jawaban benar/salah tanpa memahami tingkat penguasaan konsep
-- Tidak adanya panduan bagaimana materi yang dipelajari berhubungan dengan tujuan karir
+Banyak siswa dan mahasiswa mengalami:
 
-Banyak orang memiliki akses terhadap informasi, tetapi kesulitan mengubah informasi tersebut menjadi **pemahaman yang terstruktur**.
+- Materi pembelajaran yang panjang dan sulit dipahami secara terstruktur.
+- Belajar dengan metode pasif seperti membaca ulang tanpa mengetahui apakah konsep benar-benar dipahami.
+- Kesulitan mengetahui bagian mana yang belum dikuasai.
+- Tidak adanya hubungan antara pengetahuan yang dipelajari dengan tujuan karier.
+
+Akibatnya, pengguna sering merasa familiar dengan materi, tetapi kesulitan menjelaskan kembali atau menerapkannya.
 
 ---
 
-## 💡 Our Solution
+# 🧠 Learning Science Behind NeuroTree
 
-NeuroTree menghadirkan pengalaman belajar baru:
+NeuroTree dibangun berdasarkan prinsip ilmu pembelajaran:
 
-**Upload → Understand → Explore → Evaluate → Master → Discover Career Path**
+## 1. Chunking — Building Knowledge Structure
 
-Dokumen tidak lagi menjadi sekadar teks, tetapi berubah menjadi:
+Otak manusia lebih mudah memahami informasi kompleks ketika informasi tersebut dipecah menjadi bagian kecil yang saling berhubungan.
 
-🌳 **Knowledge Circuit**
+NeuroTree menerapkan konsep chunking dengan mengubah materi panjang menjadi:
 
-- Materi dipecah menjadi node konsep
-- Hubungan antar konsep divisualisasikan
-- Pengguna dapat mengeksplorasi struktur pengetahuan
+📄 Material  
+↓  
+🌳 Concept Nodes  
+↓  
+🔗 Knowledge Connections
 
-💡 **Adaptive Mastery System**
+Sehingga pengguna tidak hanya membaca informasi, tetapi memahami bagaimana setiap konsep saling berkaitan.
 
-- Sistem mengukur tingkat penguasaan pengguna
-- Node berubah berdasarkan progres belajar
-- Konsep yang belum dikuasai dapat dipelajari kembali
+---
 
-🧠 **AI Generated Assessment**
+## 2. Active Recall — Learning Through Retrieval
 
-- Quiz dibuat berdasarkan materi yang dipelajari
-- Evaluasi tidak hanya melihat skor, tetapi perkembangan pemahaman
+Membaca ulang materi dapat menciptakan rasa familiar, tetapi belum tentu membangun pemahaman jangka panjang.
 
-🚀 **Career Pathway Recommendation**
+Melalui Active Recall, pengguna dilatih untuk mengambil kembali informasi dari memori melalui:
 
-- Menghubungkan pengetahuan yang dikuasai dengan kemungkinan jalur karir
+- Adaptive quiz
+- Concept evaluation
+- Feedback pemahaman
+
+NeuroTree membantu pengguna mengetahui:
+- Konsep yang sudah dikuasai
+- Konsep yang masih lemah
+- Materi yang perlu dipelajari kembali
+
+---
+
+# 💡 Our Solution
+
+NeuroTree menghadirkan perjalanan belajar:
+
+## Upload → Understand → Explore → Evaluate → Master → Discover Career Path
+
+---
+
+## 📷 Multi-Input Learning Material
+
+Pengguna dapat memasukkan materi melalui:
+
+- PDF
+- DOCX
+- Gambar
+- Kamera (catatan, buku, slide, atau materi fisik)
+
+AI memahami berbagai bentuk materi dan mengubahnya menjadi struktur pembelajaran.
+
+---
+
+# 🌳 Knowledge Circuit
+
+Materi tidak lagi menjadi dokumen statis.
+
+NeuroTree mengubahnya menjadi:
+
+- Concept nodes
+- Hubungan antar konsep
+- Learning pathway
+- Visual exploration seperti peta perjalanan belajar
+
+Pengguna dapat mengeksplorasi materi secara interaktif, bukan hanya membaca secara linear.
+
+---
+
+# 🧠 Adaptive Mastery System
+
+Setiap pengguna memiliki perjalanan belajar yang berbeda.
+
+NeuroTree:
+
+- Melacak tingkat penguasaan konsep.
+- Memberikan evaluasi berdasarkan pemahaman.
+- Menunjukkan area yang perlu diperkuat.
+- Menyesuaikan rekomendasi belajar berikutnya.
+
+---
+
+# 🎮 Interactive Learning Experience
+
+NeuroTree menghadirkan pengalaman belajar seperti eksplorasi game:
+
+- Membuka node konsep baru.
+- Melihat progress mastery.
+- Mengeksplorasi hubungan antar pengetahuan.
+
+Tujuannya mengubah belajar dari aktivitas pasif menjadi perjalanan yang aktif dan engaging.
+
+---
+
+# 🚀 From Learning to Career Pathway
+
+NeuroTree tidak berhenti setelah pengguna memahami materi.
+
+Dengan menganalisis:
+
+- Konsep yang telah dikuasai.
+- Progress pembelajaran.
+- Area kemampuan pengguna.
+
+NeuroTree memberikan rekomendasi:
+
+- Skill yang sudah dimiliki.
+- Skill yang perlu dikembangkan.
+- Career pathway yang relevan.
+
+Sehingga pengguna tidak hanya bertanya:
+
+> "Apa yang harus saya pelajari?"
+
+Tetapi juga:
+
+> "Kemampuan ini dapat membawa saya ke arah mana?"
 
 ---
 
 # ✨ Core Features
 
-## 1. 📄 Document Intelligence (NT-01)
+## 1. 📄 Document & Image Intelligence (NT-01)
 
-Mengubah dokumen pembelajaran menjadi struktur pengetahuan.
+Mengubah berbagai sumber materi menjadi struktur pengetahuan.
 
 Input:
-
 - PDF
 - DOCX
-- Materi pembelajaran
+- Camera Image
 
 Output:
-
-- Knowledge graph
-- Concept nodes
-- Learning pathway
+- Knowledge Circuit
+- Concept Nodes
+- Learning Pathway
 
 ---
 
-## 2. 🧩 Knowledge Circuit Visualization
+## 2. 🧠 Active Recall Assessment (NT-02/NT-03)
 
-NeuroTree menggunakan pendekatan graph-based learning.
+AI menghasilkan evaluasi berdasarkan materi yang dipelajari.
 
-Pengguna dapat:
-
-- Melihat hubungan antar konsep
-- Memahami prerequisite antar materi
-- Menentukan area yang perlu dipelajari kembali
+Output:
+- Adaptive Quiz
+- Learning Feedback
+- Concept Mastery
 
 ---
 
